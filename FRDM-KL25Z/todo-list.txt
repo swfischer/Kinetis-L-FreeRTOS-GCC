@@ -1,0 +1,11 @@
+
+TODO:
+
+- add shutdown command?
+- add RTC driver and command?
+- add sleep command with RTC wakeup?
+- add USB driver (maybe send console to USB directly)
+- used PIT for servo driver/timer?
+- add a task command, listing the tasks?
+- add a heap command, to list what's on the heap?
+- use the ADC to read the temperature
