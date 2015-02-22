@@ -1,6 +1,7 @@
 
 TODO:
 
+- add description comment blocks in the code
 - add shutdown command?
 - add RTC driver and command?
 - add sleep command with RTC wakeup?
