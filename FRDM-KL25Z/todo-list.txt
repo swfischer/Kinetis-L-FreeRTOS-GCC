@@ -9,4 +9,4 @@ TODO:
 - used PIT for servo driver/timer?
 - add a task command, listing the tasks?
 - add a heap command, to list what's on the heap?
-- use the ADC to read the temperature
+- figure out the bug with "timed" commands and the repeated prompts afterwards

@@ -112,6 +112,7 @@ int i2cDeviceInit(i2cDevice_t *dev, I2C_MemMapPtr base, uint8_t devAddr, uint32_
 
 int i2cAcquireBus(i2cDevice_t *dev, uint32_t waitMs)
 {
+   clkGate_t clk;
    osStatus status;
    int rc = -1;
 
@@ -123,14 +124,18 @@ int i2cAcquireBus(i2cDevice_t *dev, uint32_t waitMs)
    {
       status = osMutexWait(sBus1Lock, waitMs);
    }
-   
+
    if (status == osOK)
    {
-      // Enable clocks
-      clkEnable(determineClock(dev));
-
-      dev->base->F  = I2C_F_ICR(dev->fReg);
-      dev->base->C1 = I2C_C1_IICEN_MASK;
+      clk = determineClock(dev);
+      if (!clkIsEnabled(clk))
+      {
+         // Enable clocks
+         clkEnable(clk);
+         // Init device
+         dev->base->F  = I2C_F_ICR(dev->fReg);
+         dev->base->C1 = I2C_C1_IICEN_MASK;
+      }
 
       dev->acquired = 1;
       rc = 0;
@@ -143,6 +148,11 @@ void i2cReleaseBus(i2cDevice_t *dev)
 {
    if (dev->acquired)
    {
+#if I2C_KEEP_CLKS_ENABLED
+      clkDisable(determineClock(dev));
+#endif
+      dev->acquired = 0;
+
       if (dev->base == I2C0_BASE_PTR)
       {
          osMutexRelease(sBus0Lock);
@@ -151,10 +161,6 @@ void i2cReleaseBus(i2cDevice_t *dev)
       {
          osMutexRelease(sBus1Lock);
       }
-
-      clkDisable(determineClock(dev));
-
-      dev->acquired = 0;
    }
 }
 

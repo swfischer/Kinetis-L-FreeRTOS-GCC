@@ -32,6 +32,8 @@
 
 #include <stdint.h>
 
+#include "MKL25Z4.h"
+
 typedef struct
 {
    I2C_MemMapPtr base;

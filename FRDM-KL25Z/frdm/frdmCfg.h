@@ -43,7 +43,10 @@
 #define TOUCH_PAD_A   (9)
 #define TOUCH_PAD_B  (10)
 
+//#define I2C_KEEP_CLKS_ENABLED
 #define ACCEL_I2C    (I2C0_BASE_PTR)
 #define MMA8451_SA0_ONE // SA0 pulled high
+
+//#define ADC_KEEP_CLKS_ENABLED
 
 #endif // _FRDMCFG_H_

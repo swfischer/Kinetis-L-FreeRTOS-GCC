@@ -30,6 +30,7 @@
 #include <stddef.h>  // For NULL
 
 #include "accel.h"
+#include "adc.h"
 #include "clk.h"
 #include "console.h"
 #include "consoleCmds.h"
@@ -48,13 +49,17 @@
 #define TOKEN_MATCH(x,y)  (utilsStrcmp(token[x],y) == 0)
 #define TOKEN_VALUE(x)    (utilsStrtoul(token[x], NULL, 0))
 
+static adcDevice_t sAdcDevice;
+
 static bool commandAccel(int count, char **token);
+static bool commandAdc(int count, char **token);
 static bool commandClock(int count, char **token);
 static bool commandLed(int count, char **token);
 static bool commandMem(int count, char **token);
 static bool commandReboot(int count, char **token);
 static bool commandTouch(int count, char **token);
 static bool commandVersion(int count, char **token);
+static int  readTemp(void);
 
 // ----------------------------------------------------------------------------
 // External Functions
@@ -63,12 +68,15 @@ static bool commandVersion(int count, char **token);
 void consoleCmdsInit(void)
 {
    consoleTaskRegisterCommand("accel", commandAccel);
+   consoleTaskRegisterCommand("adc", commandAdc);
    consoleTaskRegisterCommand("clock", commandClock);
    consoleTaskRegisterCommand("led", commandLed);
    consoleTaskRegisterCommand("mem", commandMem);
    consoleTaskRegisterCommand("reboot", commandReboot);
    consoleTaskRegisterCommand("touch", commandTouch);
    consoleTaskRegisterCommand("version", commandVersion);
+
+   adcDeviceInit(&sAdcDevice, ADC0_BASE_PTR);
 }
 
 // ----------------------------------------------------------------------------
@@ -107,6 +115,71 @@ static bool commandAccel(int count, char **token)
    }
 
    return true;
+}
+
+static bool commandAdc(int count, char **token)
+{
+   bool handled = true;
+   uint16_t d;
+   int ch;
+
+   if ((IS_2_TOKENS() || IS_3_TOKENS()) && TOKEN_MATCH(1, "help"))
+   {
+      consolePrintf("%s - command to view adc data\n", token[0]);
+
+      if (IS_3_TOKENS())
+      {
+         consolePrintf("\nCommand options are:\n\n");
+         consolePrintf("  <channel #> - performs a read on the given channel\n");
+         consolePrintf("  <channel #> timed - performs reads twice per second until stopped\n");
+         consolePrintf("  temp - performs a read of the MCU temperature\n");
+         consolePrintf("  temp timed - performs reads twice per second until stopped\n");
+      }
+   }
+   else if (IS_2_TOKENS() && TOKEN_MATCH(1, "temp"))
+   {
+      adcAcquire(&sAdcDevice, WAIT_FOREVER);
+      consolePrintf("MCU temperature = %d (degC)\n", readTemp());
+      adcRelease(&sAdcDevice);
+   }
+   else if (IS_3_TOKENS() && TOKEN_MATCH(1, "temp") && TOKEN_MATCH(2, "timed"))
+   {
+      adcAcquire(&sAdcDevice, WAIT_FOREVER);
+      consolePrintf("\n<press any key to stop>\n");
+      while (consoleGetInputCnt() == 0)
+      {
+         consolePrintf("MCU temperature = %d (degC)\n", readTemp());
+         osDelay( 500 ); // 500ms
+      }
+      adcRelease(&sAdcDevice);
+   }
+   else if (IS_2_TOKENS())
+   {
+      ch = TOKEN_VALUE(1);
+      adcAcquire(&sAdcDevice, WAIT_FOREVER);
+      d = adcRead(&sAdcDevice, ch);
+      consolePrintf("ADC value = %d (%x)\n", d, d);
+      adcRelease(&sAdcDevice);
+   }
+   else if (IS_3_TOKENS() && TOKEN_MATCH(2, "timed"))
+   {
+      ch = TOKEN_VALUE(1);
+      adcAcquire(&sAdcDevice, WAIT_FOREVER);
+      consolePrintf("\n<press any key to stop>\n");
+      while (consoleGetInputCnt() == 0)
+      {
+         d = adcRead(&sAdcDevice, ch);
+         consolePrintf("ADC value = %d (%x)\n", d, d);
+         osDelay( 500 ); // 500ms
+      }
+      adcRelease(&sAdcDevice);
+   }
+   else
+   {
+      handled = false;
+   }
+
+   return handled;
 }
 
 static bool commandClock(int count, char **token)
@@ -343,4 +416,28 @@ static bool commandVersion(int count, char **token)
    }
 
    return true;
+}
+
+static int readTemp(void)
+{
+   uint32_t d;
+   int vtemp;
+   int temp = 0;
+
+   // Average 4 reading
+   d  = adcRead(&sAdcDevice, 26);
+   d += adcRead(&sAdcDevice, 26);
+   d += adcRead(&sAdcDevice, 26);
+   d += adcRead(&sAdcDevice, 26);
+   d /= 4;
+
+   // voltage = (3.3vdc / 65536 counts) * read counts
+   vtemp = (int)((3.3f / 65536) * d * 1000); // mV
+
+   // temp = 25 - ((Vtemp - Vtemp25) / m)
+   // Vtemp25 = 716 mV
+   // m = 1.62 (ignoring warm or cold slopes, just using one)
+   temp = 25 - ((vtemp - 716) / 1620);
+
+   return temp;
 }

@@ -47,6 +47,7 @@ OBJS = $(FRDM_PATH)/startup.o \
        $(FRDM_PATH)/pinmux.o \
        $(FRDM_PATH)/os.o \
        $(DRV_PATH)/accel.o \
+       $(DRV_PATH)/adc.o \
        $(DRV_PATH)/clk.o \
        $(DRV_PATH)/gpio.o \
        $(DRV_PATH)/i2c.o \

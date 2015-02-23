@@ -47,6 +47,7 @@ In ./rtos/*:
 In ./drv/*:
 
 * a driver for the on-board accelerometer (accel.c/h)
+* a driver for accessing the MCU ADC hardware (adc.c/h) - providing bus locking to prevent resource conflicts
 * a driver for managing the MCU clock gates (clk.c/h) - providing clock enable/disable counting to prevent conflicts
 * a driver for accessing the MCU GPIOs (gpio.c/h) - just a simple wrapper
 * a driver for managing the MCU I2C buses (i2c.c/h) - providing bus locking to prevent resource conflicts
