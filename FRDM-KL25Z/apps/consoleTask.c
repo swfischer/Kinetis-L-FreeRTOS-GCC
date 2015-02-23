@@ -178,22 +178,35 @@ static bool commandHelp(int count, char **token)
 
    pHelp[1] = "help";
 
-   // Check for a help request
-   if (IS_2_TOKENS() && TOKEN_MATCH(1, "help"))
+   // Check for a detaled help request
+   if (IS_3_TOKENS() && TOKEN_MATCH(1, "help") && TOKEN_MATCH(2, "long"))
    {
       consolePrintf("%s - help command\n", token[0]);
+      consolePrintf("\nCommand options are:\n\n");
+      consolePrintf("  <none> - shows the list of commands\n");
+      consolePrintf("  <command> - shows detailed help on the given command\n");
    }
    else if (IS_1_TOKEN())  // Output full help page
    {
+      consolePrintf("\nCommand List:\n\n");
       for (i = 0; i < MAX_NUMBER_OF_TESTS; i++)
       {
          if (sCmdList[i].cmd == NULL)
          {
             continue;
          }
-         pHelp[0] = sCmdList[i].cmd;
-         sCmdList[i].handler(2, pHelp);
+
+         if (utilsStrcmp(sCmdList[i].cmd, "help") == 0)
+         {
+            consolePrintf("%s - help command\n", token[0]);
+         }
+         else
+         {
+            pHelp[0] = sCmdList[i].cmd;
+            sCmdList[i].handler(2, pHelp);
+         }
       }
+      consolePrintf("\nType \"help <command>\" for detailed help on a command\n");
    }
    else // Find the command and output it's help
    {
