@@ -148,6 +148,10 @@ const muxConfig_t muxConfig[] =
 , { PORT_E, PORT_PIN_24, PIN_DEFAULTS_WITH_ALT(5) } // Accelerometer (I2C CLK)
 , { PORT_E, PORT_PIN_25, PIN_DEFAULTS_WITH_ALT(5) } // Accelerometer (I2C DATA)
 
+// Already set in startup code
+//, { PORT_A, PORT_PIN_18, PIN_DEFAULTS_WITH_ALT(0) } // EXTAL
+//, { PORT_A, PORT_PIN_19, PIN_DEFAULTS_WITH_ALT(0) } // XTAL
+
 // Table Termination - must be last
 , { PORT_INVALID }
 };

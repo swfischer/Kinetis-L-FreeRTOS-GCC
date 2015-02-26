@@ -32,8 +32,27 @@
 
 #include "MKL25Z4.h"
 
+//#define USB_DEVICE_ENABLED
+
+#ifdef USB_DEVICE_ENABLED
+#define CLK_DIV_1 (1)
+#define PR_DIV_0  (3)
+#define V_DIV_0   (24)
+#else
+#define CLK_DIV_1 (0)
+#define PR_DIV_0  (3)
+#define V_DIV_0   (0)
+#endif
+
 #define CORE_CLOCK   (48000000) // Hz
 #define BUS_CLOCK    (CORE_CLOCK / 2) // Hz
+
+#ifdef USB_DEVICE_ENABLED
+#define PERIPH_CLOCK (48000000) // Hz - really MCGPLLCLK/MCGFLLCLK
+#else
+#define PERIPH_CLOCK (24000000) // Hz - really MCGPLLCLK/MCGFLLCLK
+#endif
+
 #define TICK_RATE    (100) // Hz
 #define MS_PER_TICK  (1000/TICK_RATE) // Milliseconds per tick
 #define HZ           (1000/MS_PER_TICK) // Number of ticks per second

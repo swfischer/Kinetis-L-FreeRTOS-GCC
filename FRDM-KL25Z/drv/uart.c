@@ -515,7 +515,7 @@ static void uartSetBaud(uint32_t baud)
    if (UART_BASE == UART0_BASE_PTR)
    {
       // UARTLP
-      sbr = (CORE_CLOCK / OVER_SAMPLE) / baud;
+      sbr = (PERIPH_CLOCK / OVER_SAMPLE) / baud;
       UARTLP_C4_REG(UART_BASE) = UARTLP_C4_OSR(OVER_SAMPLE - 1);
       UARTLP_BDH_REG(UART_BASE) &= ~UART_BDH_SBR_MASK;
       UARTLP_BDH_REG(UART_BASE) |= UARTLP_BDH_SBR((sbr >> 8));

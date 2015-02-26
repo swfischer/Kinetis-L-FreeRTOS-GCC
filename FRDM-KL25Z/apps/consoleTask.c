@@ -64,6 +64,7 @@ static char sCmd[COMMAND_MAX_SIZE];
 static char *sToken[MAX_TOKENS];
 
 static bool commandHelp(int count, char **token);
+static char* parseClocking(char *buf, int len);
 static void parseSDID(void);
 static void parseSRS(void);
 static int  parseTokens(char *pIn, char **token, int count);
@@ -154,8 +155,11 @@ void consoleTaskRegisterCommand(char *cmd, cmdHandler_t test)
 
 void consoleTaskShowBanner(void)
 {
+   char buf[30];
+
    consolePrintf("\nBoard .......: Freescale FRDM-KL25Z\n");
    consolePrintf("Built .......: %s %s\n", __DATE__, __TIME__);
+   consolePrintf("Clocking ....: %s\n", parseClocking(buf, 30));
    consolePrintf("FreeRTOS ....: %s\n", tskKERNEL_VERSION_NUMBER);
    consolePrintf("Reset code ..: %02x %02x\n", RCM_SRS0, RCM_SRS1);
    consoleFlush();
@@ -232,6 +236,22 @@ static bool commandHelp(int count, char **token)
    }
 
    return handled;
+}
+
+static char* parseClocking(char *buf, int len)
+{
+   if (MCG_C6 & MCG_C6_PLLS_MASK)
+   {
+      int pll = (8 / ((MCG_C5 & MCG_C5_PRDIV0_MASK) + 1)) * ((MCG_C6 & MCG_C6_VDIV0_MASK) + 24);
+      int core = pll / (((SIM_CLKDIV1 & SIM_CLKDIV1_OUTDIV1_MASK) >> SIM_CLKDIV1_OUTDIV1_SHIFT) + 1);
+      utilsSnprintf(buf, len, "PLL @ %dMHz w/Core @ %dMHz", pll, core);
+   }
+   else
+   {
+      utilsSnprintf(buf, len, "FLL");
+   }
+
+   return buf;
 }
 
 static void parseSDID(void)
