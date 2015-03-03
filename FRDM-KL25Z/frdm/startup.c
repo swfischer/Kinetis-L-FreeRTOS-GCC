@@ -33,7 +33,7 @@
 
 #include "frdmCfg.h"
 #include "led.h"
-#include "MKL25Z4.h"
+#include "kinetis.h"
 #include "os.h"
 
 // Memory locations defined by the linker
@@ -370,14 +370,6 @@ static void initClocks(void)
    // With USB: Div-by-2 for clock 1 and clock 4 (OUTDIV1=1, OUTDIV4=1)
    // Without USB: Div-by-1 for clock 1 and Div-by-2 for clock 4 (OUTDIV1=0, OUTDIV4=1)
    SIM_CLKDIV1 = SIM_CLKDIV1_OUTDIV1(CLK_DIV_1) | SIM_CLKDIV1_OUTDIV4(1);
-
-   // System oscillator drives 32 kHz clock for various peripherals (OSC32KSEL=0)
-   SIM_SOPT1 &= ~SIM_SOPT1_OSC32KSEL(3);
-
-   // Select PLL as a clock source for various peripherals (PLLFLLSEL=1)
-   // Clock source for TPM counter clock is MCGFLLCLK or MCGPLLCLK/2
-   SIM_SOPT2 |= SIM_SOPT2_PLLFLLSEL_MASK;
-   SIM_SOPT2 = (SIM_SOPT2 & ~(SIM_SOPT2_TPMSRC(2))) | SIM_SOPT2_TPMSRC(1);
 
    // Enable clock gate to Port A module to enable pin routing (PORTA=1)
    SIM_SCGC5 |= SIM_SCGC5_PORTA_MASK;

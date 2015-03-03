@@ -33,7 +33,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "MKL25Z4.h"
+#include "kinetis.h"
 
 extern void ledInit(void);
 

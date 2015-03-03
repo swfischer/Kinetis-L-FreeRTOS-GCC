@@ -32,7 +32,7 @@
 
 #include "clk.h"
 #include "irq.h"
-#include "MKL25Z4.h"
+#include "kinetis.h"
 #include "os.h"
 #include "uart.h"
 
@@ -397,7 +397,7 @@ static int hwInit(uint32_t baud)
    s1 = UART_S1_REG(UART_BASE);
    s1 = s1; // Keep the compile quiet
 
-   // Setup the Tx interrupt
+   // Setup the interrupts
    irqRegister(info.interrupt, uartIrqHandler, 0);
    irqEnable(info.interrupt);
 
@@ -486,7 +486,7 @@ static void uartIrqHandler(uint32_t unused)
       UART_C2_REG(UART_BASE) &= ~(UART_C2_TCIE_MASK);
       flags |= UART_FLAG_WRITE;
    }
-   
+ 
    if (status & UART_S1_RDRF_MASK) // Receive data waiting
    {
       uint8_t byte;

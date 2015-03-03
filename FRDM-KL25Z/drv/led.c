@@ -34,6 +34,7 @@
 #include <stdint.h>
 
 #include "clk.h"
+#include "kinetis.h"
 #include "led.h"
 
 // ----------------------------------------------------------------------------

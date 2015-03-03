@@ -35,7 +35,7 @@
 
 #include "clk.h"
 #include "irq.h"
-#include "MKL25Z4.h"
+#include "kinetis.h"
 #include "os.h"
 
 #define NUM_CHANNELS    (16)

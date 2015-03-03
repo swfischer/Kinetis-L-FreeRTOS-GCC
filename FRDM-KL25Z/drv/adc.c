@@ -29,7 +29,7 @@
 
 #include "adc.h"
 #include "clk.h"
-#include "MKL25Z4.h"
+#include "kinetis.h"
 #include "os.h"
 #include "utils.h"
 

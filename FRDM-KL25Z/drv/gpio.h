@@ -33,7 +33,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "MKL25Z4.h"
+#include "kinetis.h"
 
 #define GPIO_PORT_PIN_TO_ID(port, pin) ((port << 5) | (pin & 0x1f))
 #define GPIO_ID_TO_PORT(id) (id >> 5)

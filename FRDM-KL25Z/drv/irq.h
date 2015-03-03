@@ -32,7 +32,7 @@
 
 #include <stdint.h>
 
-#include "MKL25Z4.h"
+#include "kinetis.h"
 
 typedef IRQInterruptIndex intIdx_t;
 

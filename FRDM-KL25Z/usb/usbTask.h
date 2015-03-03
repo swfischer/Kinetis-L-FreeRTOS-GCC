@@ -27,27 +27,9 @@
 // either expressed or implied, of the FreeBSD Project.
 // ----------------------------------------------------------------------------
 
-#ifndef _ADC_H_
-#define _ADC_H_
+#ifndef _USBTASK_H_
+#define _USBTASK_H_
 
-#include <stdint.h>
+extern void usbTaskEntry(void *pParameters);
 
-#include "kinetis.h"
-
-typedef struct
-{
-   ADC_MemMapPtr base;
-   uint8_t acquired;
-
-} adcDevice_t;
-
-// Returns 0 on success, otherwise -1
-extern int  adcDeviceInit(adcDevice_t *dev, ADC_MemMapPtr base);
-
-// Returns 0 on success, otherwise -1
-extern int  adcAcquire(adcDevice_t *dev, uint32_t waitMs);
-extern void adcRelease(adcDevice_t *dev);
-
-extern uint16_t adcRead(adcDevice_t *dev, int channel);
-
-#endif // _ADC_H_
+#endif // _USBTASK_H_

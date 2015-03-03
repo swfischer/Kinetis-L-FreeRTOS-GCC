@@ -33,7 +33,7 @@
 #include "clk.h"
 #include "frdmCfg.h"
 #include "i2c.h"
-#include "MKL25Z4.h"
+#include "kinetis.h"
 #include "os.h"
 #include "utils.h"
 

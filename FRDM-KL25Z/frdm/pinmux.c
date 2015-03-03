@@ -30,7 +30,7 @@
 #include <stdint.h>
 
 #include "clk.h"
-#include "MKL25Z4.h"
+#include "kinetis.h"
 #include "pinmux.h"
 
 #define PIN_DEFAULTS_WITH_ALT(x) \

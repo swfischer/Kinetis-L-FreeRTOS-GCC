@@ -27,27 +27,51 @@
 // either expressed or implied, of the FreeBSD Project.
 // ----------------------------------------------------------------------------
 
-#ifndef _ADC_H_
-#define _ADC_H_
+#include "clk.h"
+#include "os.h"
+#include "usbTask.h"
 
-#include <stdint.h>
+#include "usb_cdc.h"
+#include "usb_reg.h"
 
-#include "kinetis.h"
+#include "irq.h"
 
-typedef struct
+extern uint8 gu8USB_Flags; 
+extern uint8 gu8EP3_OUT_ODD_Buffer[];
+extern tBDT tBDTtable[];
+
+volatile uint8  gu8ISR_Flags=0;
+
+void usbTaskEntry(void *pParameters)
 {
-   ADC_MemMapPtr base;
-   uint8_t acquired;
+   osDelay(5000); // this is a bit of a hack just to allow for console debugging
 
-} adcDevice_t;
+   USB_REG_SET_ENABLE;
+   USB_REG_SET_STDBY_STOP;      
+   USB_REG_SET_STDBY_VLPx;
 
-// Returns 0 on success, otherwise -1
-extern int  adcDeviceInit(adcDevice_t *dev, ADC_MemMapPtr base);
+   irqRegister(INT_USB0, USB_ISR, 0);
+   irqEnable(INT_USB0);
 
-// Returns 0 on success, otherwise -1
-extern int  adcAcquire(adcDevice_t *dev, uint32_t waitMs);
-extern void adcRelease(adcDevice_t *dev);
+   clkEnable(CLK_PORTC);
+   CDC_Init();
 
-extern uint16_t adcRead(adcDevice_t *dev, int channel);
+   while (1)
+   {
+      CDC_Engine();
 
-#endif // _ADC_H_
+      // If data transfer arrives
+      if(FLAG_CHK(EP_OUT,gu8USB_Flags))
+      {
+         (void)USB_EP_OUT_SizeCheck(EP_OUT);
+         usbEP_Reset(EP_OUT);
+         usbSIE_CONTROL(EP_OUT);
+         FLAG_CLR(EP_OUT,gu8USB_Flags);
+
+         // Send it back to the PC
+         EP_IN_Transfer(EP2,CDC_OUTPointer,1);
+      }
+
+      osDelay(100);
+   }
+}

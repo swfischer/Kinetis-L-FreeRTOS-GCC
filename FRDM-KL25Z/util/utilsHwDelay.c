@@ -33,7 +33,7 @@
 
 #include <stdint.h>
 
-#include "MKL25Z4.h"
+#include "kinetis.h"
 
 // delay(ms) -- Spin wait delay (in ms)
 //              Note:  uses low power timer (LPTMR)

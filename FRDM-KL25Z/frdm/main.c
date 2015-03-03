@@ -37,12 +37,16 @@
 #include "os.h"
 #include "pinmux.h"
 #include "touch.h"
+#include "usbTask.h"
 
 #define CONSOLE_PRIORITY    (tskIDLE_PRIORITY + 2)
 #define CONSOLE_STACK_SIZE  (2 *configMINIMAL_STACK_SIZE)
 
 #define LED_PRIORITY	       (tskIDLE_PRIORITY + 3)
 #define LED_STACK_SIZE      (configMINIMAL_STACK_SIZE)
+
+#define USB_PRIORITY	       (tskIDLE_PRIORITY + 1)
+#define USB_STACK_SIZE      (4 * configMINIMAL_STACK_SIZE)
 
 static void simInit(void);
 
@@ -97,6 +101,14 @@ int main( void )
    tDef.name = "led";
    osThreadCreate(&tDef, NULL);
 
+#ifdef USB_DEVICE_ENABLED
+   tDef.pthread = usbTaskEntry;
+   tDef.tpriority = LED_PRIORITY;
+   tDef.stacksize = LED_STACK_SIZE;
+   tDef.name = "usb";
+   osThreadCreate(&tDef, NULL);
+#endif
+
    osKernelStart();
 
    // Should never get here
@@ -110,10 +122,21 @@ int main( void )
 
 static void simInit(void)
 {
+   // System oscillator drives 32 kHz clock for various peripherals (OSC32KSEL=0)
+   SIM_SOPT1 &= ~SIM_SOPT1_OSC32KSEL(3);
+
+   // Select PLL as a clock source for various peripherals (PLLFLLSEL=1)
+   SIM_SOPT2 |= SIM_SOPT2_PLLFLLSEL_MASK;
+
    // UART0 clock setup
    SIM_SOPT2 &= ~SIM_SOPT2_UART0SRC_MASK;
    SIM_SOPT2 |= SIM_SOPT2_UART0SRC(1);
 
    // TPM clock setup
-   SIM_SOPT2 |= SIM_SOPT2_TPMSRC(1);
+   SIM_SOPT2 = (SIM_SOPT2 & ~(SIM_SOPT2_TPMSRC(2))) | SIM_SOPT2_TPMSRC(1);
+
+#ifdef USB_DEVICE_ENABLED
+   // USB clock source MCGPLLCLK/2 or MCGFLLCLK
+   SIM_SOPT2 |= SIM_SOPT2_USBSRC_MASK;
+#endif
 }

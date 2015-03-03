@@ -5,6 +5,7 @@ PROG = frdm
 APPS_PATH = ./apps
 DRV_PATH  = ./drv
 FRDM_PATH = ./frdm
+USB_PATH  = ./usb
 UTIL_PATH = ./util
 RTOS_PATH = ./rtos
 HEAP_PATH = $(RTOS_PATH)/portable/MemMang
@@ -26,10 +27,11 @@ CFLAGS += -I ./inc \
           -I $(APPS_PATH) \
           -I $(DRV_PATH) \
           -I $(FRDM_PATH) \
+          -I $(USB_PATH) \
           -I $(UTIL_PATH) \
-          -I ${RTOS_PATH}/include \
-          -I ${RTOS_PATH}/include \
-          -I ${RTOS_PATH}/portable/GCC/ARM_CM0
+          -I $(RTOS_PATH)/include \
+          -I $(RTOS_PATH)/include \
+          -I $(RTOS_PATH)/portable/GCC/ARM_CM0
 
 LDFLAGS = -T $(FRDM_PATH)/mkl25z4.ld
 
@@ -55,6 +57,10 @@ OBJS = $(FRDM_PATH)/startup.o \
        $(DRV_PATH)/led.o \
        $(DRV_PATH)/touch.o \
        $(DRV_PATH)/uart.o \
+       $(USB_PATH)/ring_buffer.o \
+       $(USB_PATH)/usb.o \
+       $(USB_PATH)/usb_cdc.o \
+       $(USB_PATH)/usbTask.o \
        $(UTIL_PATH)/utilsHwDelay.o \
        $(UTIL_PATH)/utilsString.o \
        $(UTIL_PATH)/utilsPrintf.o \
@@ -78,8 +84,8 @@ all: $(OBJS)
 	$(CC) $(CFLAGS) -c -o $@ $<
     
 clean:
-	rm -f $(APPS_PATH)/*.o $(FRDM_PATH)/*.o $(DRV_PATH)/*.o $(UTIL_PATH)/*.o
-	rm -f $(APPS_PATH)/*.lst $(FRDM_PATH)/*.lst $(DRV_PATH)/*.lst $(UTIL_PATH)/*.lst
+	rm -f $(APPS_PATH)/*.o $(FRDM_PATH)/*.o $(DRV_PATH)/*.o $(USB_PATH)/*.o $(UTIL_PATH)/*.o
+	rm -f $(APPS_PATH)/*.lst $(FRDM_PATH)/*.lst $(DRV_PATH)/*.lst $(USB_PATH)/*.lst $(UTIL_PATH)/*.lst
 	rm -f $(RTOS_PATH)/*.o $(HEAP_PATH)/*.o $(PORT_PATH)/*.o
 	rm -f $(RTOS_PATH)/*.lst $(HEAP_PATH)/*.lst $(PORT_PATH)/*.lst
 	rm -f *.elf *.asm *.s19 *.map

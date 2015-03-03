@@ -30,9 +30,9 @@
 #ifndef _FRDMCFG_H_
 #define _FRDMCFG_H_
 
-#include "MKL25Z4.h"
+#include "kinetis.h"
 
-//#define USB_DEVICE_ENABLED
+#define USB_DEVICE_ENABLED
 
 #ifdef USB_DEVICE_ENABLED
 #define CLK_DIV_1 (1)

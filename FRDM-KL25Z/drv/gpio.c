@@ -30,6 +30,7 @@
 #include <stdint.h>
 
 #include "gpio.h"
+#include "kinetis.h"
 
 static const GPIO_MemMapPtr sGpioBase[] =
 { PTA_BASE_PTR
