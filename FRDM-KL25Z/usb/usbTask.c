@@ -27,41 +27,36 @@
 // either expressed or implied, of the FreeBSD Project.
 // ----------------------------------------------------------------------------
 
+#include <stdint.h>
+
 #include "clk.h"
 #include "os.h"
+#include "usbCdc.h"
 #include "usbTask.h"
 
-#include "usb_cdc.h"
-#include "usb_reg.h"
-
+#include "Settings.h"
 #include "irq.h"
 
-extern uint8 gu8USB_Flags; 
+extern uint8_t gu8USB_Flags; 
 extern uint8 gu8EP3_OUT_ODD_Buffer[];
 extern tBDT tBDTtable[];
-
-volatile uint8  gu8ISR_Flags=0;
 
 void usbTaskEntry(void *pParameters)
 {
    osDelay(5000); // this is a bit of a hack just to allow for console debugging
 
-   USB_REG_SET_ENABLE;
-   USB_REG_SET_STDBY_STOP;      
-   USB_REG_SET_STDBY_VLPx;
-
+   // Direct the interrupt for now
    irqRegister(INT_USB0, USB_ISR, 0);
    irqEnable(INT_USB0);
 
-   clkEnable(CLK_PORTC);
-   CDC_Init();
+   usbCdcInit();
 
    while (1)
    {
-      CDC_Engine();
+      usbCdcEngine();
 
       // If data transfer arrives
-      if(FLAG_CHK(EP_OUT,gu8USB_Flags))
+      if (FLAG_CHK(EP_OUT,gu8USB_Flags))
       {
          (void)USB_EP_OUT_SizeCheck(EP_OUT);
          usbEP_Reset(EP_OUT);

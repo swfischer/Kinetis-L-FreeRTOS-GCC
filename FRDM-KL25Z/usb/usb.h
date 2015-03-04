@@ -1,14 +1,20 @@
+
+// ----------------------------------------------------------------------------
+// Based on the Freescale USB echo device demo
+// ----------------------------------------------------------------------------
+
 #ifndef __USB__
 #define __USB__
 
 #include <stdint.h>
 
-//#include "common.h"
+#include "fs_types.h"
 
+typedef uint8_t (*usbInterfaceReqHandler)(void);
 
 /*********** HIL ***************/
-#include "usb_cdc.h"
-#define USB_InterfaceReq_Handler  CDC_InterfaceReq_Handler   
+//#include "usbCdc.h"
+//#define USB_InterfaceReq_Handler  usbCdcInterfaceReqHandler   
 /********************************/
 
 /* Macros */
@@ -256,12 +262,14 @@ typedef struct _tUSB_Setup
        uint8 wLength_h;
 }tUSB_Setup;
 
-
+#define GET_STATUS              0x00
+#define CLEAR_FEATURE           0x01
+#define SET_FEATURE             0x03
 
 /* Prototypes */
 void USB_Testing_Read_Registers(void);
 void USB_Testing_Write_Registers(void);
-void USB_Init(void);
+void USB_Init(usbInterfaceReqHandler handler);
 void USB_EP0_IN_Handler(void);
 void EP_IN_Transfer(uint8,uint8*,uint8);
 uint8 EP_OUT_Transfer(uint8,uint8*);

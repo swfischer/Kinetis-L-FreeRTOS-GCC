@@ -1,13 +1,20 @@
 
+// ----------------------------------------------------------------------------
+// Based on the Freescale USB echo device demo
+// ----------------------------------------------------------------------------
+
 #include <stdint.h>
 
-#include"usb.h"
-//#include "bsp_KL25.h"
+#include "fs_types.h"
+
+#include "usb.h"
 #include "usb_descriptor.h"
 #include "Settings.h"
 
 #include "kinetis.h"
 #include "os.h"
+
+static usbInterfaceReqHandler sInterfaceReqHandler = NULL;
 
 /* Arrays and global buffers */
 
@@ -174,9 +181,12 @@ void USB_Testing_Write_Registers(void)
         puLocalPointer+=4;
     }  
 }
+
 /**********************************************************/
-void USB_Init(void)
-{  
+void USB_Init(usbInterfaceReqHandler handler)
+{
+   sInterfaceReqHandler = handler;
+
     /* Software Configuration */
     Setup_Pkt=(tUSB_Setup*)BufferPointer[bEP0OUT_ODD];
     gu8USB_State=uPOWER;
@@ -427,7 +437,7 @@ void USB_Setup_Handler(void)
             break;        
 
         case INTERFACE_REQ:
-            u8State=USB_InterfaceReq_Handler();    
+            u8State = sInterfaceReqHandler();    
 
             if(u8State==uSETUP)
                 tBDTtable[bEP0OUT_ODD].Stat._byte= kUDATA0;

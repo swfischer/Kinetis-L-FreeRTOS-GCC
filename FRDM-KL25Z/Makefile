@@ -30,7 +30,6 @@ CFLAGS += -I ./inc \
           -I $(USB_PATH) \
           -I $(UTIL_PATH) \
           -I $(RTOS_PATH)/include \
-          -I $(RTOS_PATH)/include \
           -I $(RTOS_PATH)/portable/GCC/ARM_CM0
 
 LDFLAGS = -T $(FRDM_PATH)/mkl25z4.ld
@@ -59,7 +58,7 @@ OBJS = $(FRDM_PATH)/startup.o \
        $(DRV_PATH)/uart.o \
        $(USB_PATH)/ring_buffer.o \
        $(USB_PATH)/usb.o \
-       $(USB_PATH)/usb_cdc.o \
+       $(USB_PATH)/usbCdc.o \
        $(USB_PATH)/usbTask.o \
        $(UTIL_PATH)/utilsHwDelay.o \
        $(UTIL_PATH)/utilsString.o \
