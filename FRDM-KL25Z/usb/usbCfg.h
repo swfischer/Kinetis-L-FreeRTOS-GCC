@@ -27,9 +27,30 @@
 // either expressed or implied, of the FreeBSD Project.
 // ----------------------------------------------------------------------------
 
-#ifndef _USBTASK_H_
-#define _USBTASK_H_
+#ifndef _USBCFG_H_
+#define _USBCFG_H_
 
-extern void usbTaskEntry(void *pParameters);
+#include "usb.h"
 
-#endif // _USBTASK_H_
+typedef struct __attribute__((packed))
+{
+   usbConfigDesc_t      cfg;
+   usbInterfaceDesc_t   inf0;
+   usbCdcHdrDesc_t      cdcHdr;
+   usbCdcCallMgtDesc_t  cdcCm;
+   usbCdcAcmDesc_t      cdcAcm;
+   usbCdcUnionDesc_t    cdcUnion;
+   usbEndpointDesc_t    ep0;
+   usbInterfaceDesc_t   inf1;
+   usbEndpointDesc_t    ep1;
+   usbEndpointDesc_t    ep2;
+} usbCfg_t;
+
+extern const usbDeviceDesc_t usbCfgDevDesc;
+extern const usbCfg_t        usbCfg;
+extern const usbStringDesc_t usbCfgLanguages;
+extern const usbStringDesc_t usbCfgManufacturer;
+extern const usbStringDesc_t usbCfgProduct;
+extern const usbStringDesc_t usbCfgSerialNumber;
+
+#endif // _USBCFG_H_

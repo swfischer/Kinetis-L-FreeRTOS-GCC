@@ -57,7 +57,8 @@ OBJS = $(FRDM_PATH)/startup.o \
        $(DRV_PATH)/touch.o \
        $(DRV_PATH)/uart.o \
        $(USB_PATH)/ring_buffer.o \
-       $(USB_PATH)/usb.o \
+       $(USB_PATH)/usbCfg.o \
+       $(USB_PATH)/usbCore.o \
        $(USB_PATH)/usbCdc.o \
        $(USB_PATH)/usbTask.o \
        $(UTIL_PATH)/utilsHwDelay.o \

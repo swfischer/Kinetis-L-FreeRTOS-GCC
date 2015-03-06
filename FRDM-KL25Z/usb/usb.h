@@ -1,289 +1,222 @@
 
-// ----------------------------------------------------------------------------
-// Based on the Freescale USB echo device demo
-// ----------------------------------------------------------------------------
-
-#ifndef __USB__
-#define __USB__
+#ifndef _USB_H_
+#define _USB_H_
 
 #include <stdint.h>
 
-#include "fs_types.h"
+// Values for bDescType fields
+#define USB_DEVICE_DESC       (0x01)
+#define USB_CONFIG_DESC       (0x02)
+#define USB_STRING_DESC       (0x03)
+#define USB_INTERFACE_DESC    (0x04)
+#define USB_ENDPOINT_DESC     (0x05)
 
-typedef uint8_t (*usbInterfaceReqHandler)(void);
+// Values for the device descriptor bcdUSB field
+#define USB_BCD_USB_1_0 (0x0100)
+#define USB_BCD_USB_1_1 (0x0110)
+#define USB_BCD_USB_2_0 (0x0200)
 
-/*********** HIL ***************/
-//#include "usbCdc.h"
-//#define USB_InterfaceReq_Handler  usbCdcInterfaceReqHandler   
-/********************************/
+// Values for the device descriptor bDevClass field
+#define USB_CLASS_INTERFACE_SPECIFIED  (0)
+#define USB_CLASS_VENDOR_SPECIFIED     (0xff)
 
-/* Macros */
-#define DISABLE_USB (USBCTL0 = 0x00)    // Disable USB module
-#define ENDPOINTS   3
+// Values for the device descriptor bMaxPktSize0 field
+#define USB_MAX_PKT_SIZE_8_BYTES    (8)
+#define USB_MAX_PKT_SIZE_16_BYTES   (16)
+#define USB_MAX_PKT_SIZE_32_BYTES   (32)
+#define USB_MAX_PKT_SIZE_64_BYTES   (64)
 
-/* EP0 settings */
-#define EP0_SIZE            32
-
-
-/********** Enpoint Value Options ***********/
-/*                                          */
-/* IN       Enabled for IN transactions     */
-/* OUT      Enabled for OUT transactions    */
-/* DISABLE  EndPoint Disabled               */
-/*                                          */
-/********************************************/
-
-
-/* EP1 settings */
-#define EP1_VALUE           _EP_IN
-#define EP1_TYPE            INTERRUPT
-#define EP1_SIZE            32
-#define EP1_BUFF_OFFSET     0x18
-
-
-/* EP2 settings */
-#define EP2_VALUE           _EP_IN
-#define EP2_TYPE            BULK
-#define EP2_SIZE            32
-#define EP2_BUFF_OFFSET     0x20
-
-/* EP3 settings */
-#define EP3_VALUE           _EP_OUT
-#define EP3_TYPE            BULK
-#define EP3_SIZE            32
-#define EP3_BUFF_OFFSET     0x28
-
-/* EP4 settings */
-#define EP4_VALUE           DISABLE
-#define EP4_SIZE            1
-#define EP4_BUFF_OFFSET     0x08
-
-/* EP5 settings */
-#define EP5_VALUE           DISABLE
-#define EP5_SIZE            1
-#define EP5_BUFF_OFFSET     0x08
-
-/* EP6 settings */
-#define EP6_VALUE           DISABLE
-#define EP6_SIZE            1
-#define EP6_BUFF_OFFSET     0x08
-
-/* Macros */
-#define EP3_CTR   tBDTtable[4].Stat._byte= kSIE 
-
-
-/* MACROS */
-#define usbSIE_CONTROL(EP)   (tBDTtable[EP<<2].Stat._byte= kSIE)
-#define usbMCU_CONTROL(EP)   (tBDTtable[EP<<2].Stat._byte= kMCU)
-#define usbEP_Reset(EP)      (tBDTtable[EP<<2].Cnt=0x0020)
-
-
-
-#define _EP_IN      USB_ENDPT_EPTXEN_MASK
-#define _EP_OUT     USB_ENDPT_EPRXEN_MASK
-
-
-
-
-//USB0_ENDPT_EPTXEN_MASK
-
-//USB0_ENDPT_EPRXEN_MASK
-
-#define DISABLE 0
-
-#define INTERRUPT   0x03
-#define BULK        0x05
-
-
-// BDT status value
-#define kMCU      0x00
-#define kSIE      0x80
-
-#define kUDATA0   0x88
-#define kUDATA1   0xC8
-
-                            
-
-#define mSETUP_TOKEN    0x0D
-#define mOUT_TOKEN      0x01
-#define mIN_TOKEN       0x09
-
-
-
-
-    // USB commands
-#define mGET_STATUS           0
-#define mCLR_FEATURE          1
-#define mSET_FEATURE          3
-#define mSET_ADDRESS          5
-#define mGET_DESC             6
-#define mSET_DESC             7
-#define mGET_CONFIG           8
-#define mSET_CONFIG           9
-#define mGET_INTF             10
-#define mSET_INTF             11
-#define mSYNC_FRAME           12
-#define	mGET_MAXLUN	          0xFE		// Mass Storage command
-  
-#define mDEVICE		            1
-#define mCONFIGURATION	            2
-#define mSTRING	        	    3
-#define mINTERFACE	            4
-#define mENDPOINT       	    5
-#define	mDEVICE_QUALIFIE            6
-#define mOTHER_SPEED_CONFIGURATION  7
-#define mINTERFACE_POWER	    8
-
-
-#define mREPORT                     0x22
-
-
-/* Request Types */
-#define STANDARD_REQ    0x00
-#define SPECIFIC_REQ    0x20
-#define VENDORSPEC_REQ  0x40
-#define DEVICE_REQ      0x00
-#define INTERFACE_REQ   0x01
-#define ENDPOINT_REQ    0x02
-
-enum
+// Device descriptor
+typedef struct __attribute__((packed))
 {
-    uSETUP,
-    uDATA
-};
+   uint8_t  bLength;
+   uint8_t  bDescType;
+   uint16_t bcdUSB;
+   uint8_t  bDevClass;
+   uint8_t  bDevSubClass;
+   uint8_t  bDevProtocol;
+   uint8_t  bMaxPktSize0;
+   uint16_t idVendor;
+   uint16_t idProduct;
+   uint16_t bcdDevice;
+   uint8_t  iManufacturer;
+   uint8_t  iProduct;
+   uint8_t  iSerialNum;
+   uint8_t  bNumConfigs;
+} usbDeviceDesc_t;
 
-enum
+// A bit mask of attributes for the config descriptor bmAttribute field
+#define USB_CFG_ATTR_REMOTE_WAKEUP  (1 << 5)
+#define USB_CFG_ATTR_SELF_POWERED   (1 << 6)
+#define USB_CFG_ATTR_ALWAYS_SET     (1 << 7)
+
+// Configuration descriptor
+typedef struct __attribute__((packed))
 {
-    EP0,
-    EP1,
-    EP2,
-    EP3,
-    EP4,
-    EP5,
-    DUMMY,
-    LOADER
-    
-};
+   uint8_t  bLength;
+   uint8_t  bDescType;
+   uint16_t wTotalLength;
+   uint8_t  bNumInterfaces;
+   uint8_t  bConfigValue;
+   uint8_t  iConfig;
+   uint8_t  bmAttributes;
+   uint8_t  bMaxPower;
+} usbConfigDesc_t;
 
-
-enum
+// Interface descriptor
+typedef struct __attribute__((packed))
 {
-    uPOWER,
-    uENUMERATED,
-    uENABLED,
-    uADDRESS,
-    uREADY    
-};
-enum
+   uint8_t  bLength;
+   uint8_t  bDescType;
+   uint8_t  bInterfaceNum;
+   uint8_t  bAltSetting;
+   uint8_t  bNumEndpoints;
+   uint8_t  bInterfaceClass;
+   uint8_t  bInterfaceSubClass;
+   uint8_t  bInterfaceProtocol;
+   uint8_t  iInterface;
+} usbInterfaceDesc_t;
+
+// Macros & bitmasks for the endpoint descriptor bEndpointAddr field
+#define USB_EP_ADDR_EP_NUMBER(x)    (x & 0x0F)
+#define USB_EP_ADDR_DIRECTION_IN    (1 << 7)
+#define USB_EP_ADDR_DIRECTION_OUT   (0)
+
+// Bitmasks for the endpoint descriptor bmAttributes field
+#define USB_EP_ATTR_TRANS_CONTROL      (0 << 0)
+#define USB_EP_ATTR_TRANS_ISOCHRONOUS  (1 << 0)
+#define USB_EP_ATTR_TRANS_BULK         (2 << 0)
+#define USB_EP_ATTR_TRANS_INTERRUPT    (3 << 0)
+#define USB_EP_ATTR_TRANS_MASK         (3 << 0)
+#define USB_EP_ATTR_ISO_SYNC_NONE      (0 << 2)
+#define USB_EP_ATTR_ISO_SYNC_ASYNC     (1 << 2)
+#define USB_EP_ATTR_ISO_SYNC_ADAPTIVE  (2 << 2)
+#define USB_EP_ATTR_ISO_SYNC_SYNC      (3 << 2)
+#define USB_EP_ATTR_ISO_SYNC_MASK      (3 << 2)
+#define USB_EP_ATTR_ISO_USE_DATA       (0 << 4)
+#define USB_EP_ATTR_ISO_USE_FEEDBACK   (1 << 4)
+#define USB_EP_ATTR_ISO_USE_EXPLICIT   (2 << 4)
+#define USB_EP_ATTR_ISO_USE_MASK       (3 << 4)
+
+// Endpoint descriptor
+typedef struct __attribute__((packed))
 {
-    fIN,
-    fOUT
-};
+   uint8_t  bLength;
+   uint8_t  bDescType;
+   uint8_t  bEndpointAddr;
+   uint8_t  bmAttributes;
+   uint16_t wMaxPktSize;
+   uint8_t  bInterval;
+} usbEndpointDesc_t;
 
-enum
+// A macro to convert a specially formatted ASCII string into a USB UTF-16LE string
+//   The input strings, "s", must be formatted such that a '\0' character follows 
+//   every normal ASCII character in the string, as in: "T\0E\0S\0T\0"
+#define USB_STRING(s)      { (sizeof(s) + 1), USB_STRING_DESC, s }
+#define USB_UTF_16LE(c)    'c','\0'
+
+// String descriptor - a bit of a hack but easily converts ASCII strings to the structure
+typedef struct usb_string
 {
-    bEP0OUT_ODD,
-    bEP0OUT_EVEN,
-    bEP0IN_ODD,
-    bEP0IN_EVEN,
-    bEP1OUT_ODD,
-    bEP1OUT_EVEN,
-    bEP1IN_ODD,
-    bEP1IN_EVEN,
-    bEP2OUT_ODD,
-    bEP2OUT_EVEN,
-    bEP2IN_ODD,
-    bEP2IN_EVEN,
-    bEP3OUT_ODD,
-    bEP3OUT_EVEN,
-    bEP3IN_ODD,
-    bEP3IN_EVEN
-};
+   uint8_t bLength;
+   uint8_t bDescriptorType;
+   char    data[];
+} usbStringDesc_t;
 
+// Bitmasks for the setup packet bmRequestType field
+#define USB_REQ_TYPE_TO_DEVICE      (0 << 0)
+#define USB_REQ_TYPE_TO_INTERFACE   (1 << 0)
+#define USB_REQ_TYPE_TO_ENDPOINT    (2 << 0)
+#define USB_REQ_TYPE_TO_OTHER       (3 << 0)
+#define USB_REQ_TYPE_TO_MASK        (3 << 0)
+#define USB_REQ_TYPE_TYPE_STANDARD  (0 << 5)
+#define USB_REQ_TYPE_TYPE_CLASS     (1 << 5)
+#define USB_REQ_TYPE_TYPE_VENDOR    (2 << 5)
+#define USB_REQ_TYPE_TYPE_MASK      (3 << 5)
+#define USB_REQ_TYPE_DEV2HOST       (1 << 7)
 
-/***** Data Types *****/
-/*     */
+// Standard request codes for the setup packet bRequest field
+#define USB_REQ_GET_STATUS       (0)
+#define USB_REQ_CLR_FEATURE      (1)
+#define USB_REQ_SET_FEATURE      (3)
+#define USB_REQ_SET_ADDRESS      (5)
+#define USB_REQ_GET_DESC         (6)
+#define USB_REQ_SET_DESC         (7)
+#define USB_REQ_GET_CONFIG       (8)
+#define USB_REQ_SET_CONFIG       (9)
+#define USB_REQ_GET_INTERFACE    (10)
+#define USB_REQ_SET_INTERFACE    (11)
+#define USB_REQ_SYNC_FRAME       (12)
 
-typedef union _tBDT_STAT
+// Setup Packet - assumes compiler is little endian
+typedef struct
 {
-    uint8 _byte;
-    struct
-    {
-        uint8 :1;
-        uint8 :1;
-        uint8 BSTALL:1;              //Buffer Stall Enable
-        uint8 DTS:1;                 //Data Toggle Synch Enable
-        uint8 NINC:1;                //Address Increment Disable
-        uint8 KEEP:1;                //BD Keep Enable
-        uint8 DATA:1;                //Data Toggle Synch Value
-        uint8 UOWN:1;                //USB Ownership
-    }McuCtlBit;
-       
-    struct
-    {
-        uint8    :2;
-        uint8 PID:4;                 //Packet Identifier
-        uint8    :2;
-    }RecPid;
-} tBDT_STAT;                         //Buffer Descriptor Status Register
+   uint8_t  bmRequestType;
+   uint8_t  bRequest;
+   uint16_t wValue;
+   uint16_t wIndex;
+   uint16_t wLength;
+} usbSetupPacket_t;
 
+// CDC descriptor type values, bDescType
+#define USB_CDC_INTERFACE  (0x24)
+#define USB_CDC_ENDPOINT   (0x25)
 
+// CDC descriptor sub-class values, bDescSubType
+#define USB_CDC_SUB_TYPE_HEADER     (0x00)
+#define USB_CDC_SUB_TYPE_CALL_MGT   (0x01)
+#define USB_CDC_SUB_TYPE_ACM        (0x02) // Abstract Control Management
+#define USB_CDC_SUB_TYPE_UNION      (0x06)
 
-typedef struct _tBDT
+// Values for the CDC header descriptor bcdCDC field
+#define USB_BCD_CDC_1_1 (0x0110)
+
+// CDC header descriptor
+typedef struct __attribute__((packed))
 {
-    tBDT_STAT Stat;
-    uint8  dummy;
-    uint16 Cnt;
-    uint32 Addr;             
-} tBDT;                             
+   uint8_t  bFnLength;
+   uint8_t  bDescType;
+   uint8_t  bDescSubType;
+   uint16_t bcdCDC;
+} usbCdcHdrDesc_t;
 
+// Bitmask values for the call management descriptor bmCapabilities field
+#define USB_CDC_CM_CAPS_HANDLES_CM     (1 << 0) // Handles call mgt itself
+#define USB_CDC_CM_CAPS_CM_VIA_DATA    (1 << 1) // Supports call mgt via data class interface
 
-
-
-
-#define SWAP16(val)                                                 \
-    (uint16)((((uint16)(val) >> 0x8) & 0xFF) |                    \
-    (((uint16)(val) & 0xFF) << 0x8))
-
-#define SWAP32(val)                                                 \
-    (uint32)((SWAP16((uint32)(val) & (uint32)0xFFFF) << 0x10) |  \
-    (SWAP16((uint32)((val) >> 0x10))))
-
-
-typedef struct _tUSB_Setup 
+// CDC call management descriptor
+typedef struct __attribute__((packed))
 {
-       uint8 bmRequestType;
-       uint8 bRequest;
-       uint8 wValue_l;
-       uint8 wValue_h;
-       uint8 wIndex_l;
-       uint8 wIndex_h;
-       uint8 wLength_l;
-       uint8 wLength_h;
-}tUSB_Setup;
+   uint8_t  bFnLength;
+   uint8_t  bDescType;
+   uint8_t  bDescSubType;
+   uint8_t  bmCapabilities;
+   uint8_t  bDataInterface;
+} usbCdcCallMgtDesc_t;
 
-#define GET_STATUS              0x00
-#define CLEAR_FEATURE           0x01
-#define SET_FEATURE             0x03
+// Bitmask values for the ACM descriptor bmCapabilities field
+#define USB_CDC_ACM_CAPS_COMM    (1 << 0) // Supports Get/Set/Clear Comm Features
+#define USB_CDC_ACM_CAPS_LINE    (1 << 1) // Supports Get/Set/Ctrl Line Features
+#define USB_CDC_ACM_CAPS_BREAK   (1 << 2) // Supports Send_Break request
+#define USB_CDC_ACM_CAPS_CONN    (1 << 3) // Supports Network_Connection notification
 
-/* Prototypes */
-void USB_Testing_Read_Registers(void);
-void USB_Testing_Write_Registers(void);
-void USB_Init(usbInterfaceReqHandler handler);
-void USB_EP0_IN_Handler(void);
-void EP_IN_Transfer(uint8,uint8*,uint8);
-uint8 EP_OUT_Transfer(uint8,uint8*);
-void USB_Stall_Handler(void);
-void USB_Stall_Handler(void);
-void USB_EP0_OUT_Handler(void);
-void USB_EP0_Stall(void);
-void USB_Set_Interface(void);
-uint16 USB_EP_OUT_SizeCheck(uint8 u8EP);
-void USB_Reset_Handler(void);
-void Custom_Fields_Assignment(void);
-void USB_Endpoint_Setup_Handler(void);
-void USB_ISR(uint32_t unused);
+// CDC ACM (Abstract Control Management) descriptor
+typedef struct __attribute__((packed))
+{
+   uint8_t  bFnLength;
+   uint8_t  bDescType;
+   uint8_t  bDescSubType;
+   uint8_t  bmCapabilities;
+} usbCdcAcmDesc_t;
 
+// CDC union descriptor - only listing a single subordinate interface
+typedef struct __attribute__((packed))
+{
+   uint8_t  bFnLength;
+   uint8_t  bDescType;
+   uint8_t  bDescSubType;
+   uint8_t  bControlInterface;
+   uint8_t  bSubInterface0;
+} usbCdcUnionDesc_t;
 
-
-#endif /* __USB__*/
+#endif // _USB_H_

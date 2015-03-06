@@ -32,22 +32,15 @@
 #include "clk.h"
 #include "os.h"
 #include "usbCdc.h"
+#include "usbCore.h"
 #include "usbTask.h"
 
-#include "Settings.h"
-#include "irq.h"
-
-extern uint8_t gu8USB_Flags; 
-extern uint8 gu8EP3_OUT_ODD_Buffer[];
-extern tBDT tBDTtable[];
+extern uint8_t usbFlagsHack; 
+extern uint8_t gu8EP3_OUT_ODD_Buffer[];
 
 void usbTaskEntry(void *pParameters)
 {
    osDelay(5000); // this is a bit of a hack just to allow for console debugging
-
-   // Direct the interrupt for now
-   irqRegister(INT_USB0, USB_ISR, 0);
-   irqEnable(INT_USB0);
 
    usbCdcInit();
 
@@ -56,12 +49,13 @@ void usbTaskEntry(void *pParameters)
       usbCdcEngine();
 
       // If data transfer arrives
-      if (FLAG_CHK(EP_OUT,gu8USB_Flags))
+      if (usbFlagsHack & (1 << EP_OUT))
       {
          (void)USB_EP_OUT_SizeCheck(EP_OUT);
          usbEP_Reset(EP_OUT);
          usbSIE_CONTROL(EP_OUT);
-         FLAG_CLR(EP_OUT,gu8USB_Flags);
+
+         usbFlagsHack &= ~(1 << EP_OUT);
 
          // Send it back to the PC
          EP_IN_Transfer(EP2,CDC_OUTPointer,1);

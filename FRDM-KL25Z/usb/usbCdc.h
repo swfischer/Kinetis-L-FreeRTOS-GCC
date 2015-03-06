@@ -8,10 +8,7 @@
 
 #include <stdint.h>
 
-#include "usb.h"
-
-#include "fs_types.h"
-#include "ring_buffer.h"
+#include "usbCore.h"
 
 // Re-enumeration macros and flag
 extern volatile uint8_t usbCdcIsrFlags;
