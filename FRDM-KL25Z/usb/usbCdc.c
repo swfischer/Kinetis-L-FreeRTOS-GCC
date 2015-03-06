@@ -5,10 +5,9 @@
 
 #include <stdint.h>
 
-#include "ring_buffer.h"
-
 #include "kinetis.h"
 #include "os.h"
+#include "ringBuffer.h"
 #include "usbCdc.h"
 #include "usbCore.h"
 
@@ -47,7 +46,7 @@ void usbCdcInit(void)
    sLineCoding.databits   = 8;
 
    // Initialize Data Buffers
-   Buffer_Init(sCdcOutData, CDC_BUFFER_SIZE);
+//   ringBufferInit(sCdcOutData, CDC_BUFFER_SIZE);
 }
 
 void usbCdcEngine(void)
@@ -77,12 +76,12 @@ void usbCdcEngine(void)
       {
          usbFlagsHack &= ~(1 << EP0);
 
-         (void)EP_OUT_Transfer(EP0, (uint8_t*)&sLineCoding);
-         EP_IN_Transfer(EP0,0,0);
+         usbCoreEpOutTransfer(EP0, (uint8_t*)&sLineCoding);
+         usbCoreEpInTransfer(EP0,0,0);
       }
       break;
    case SET_CONTROL_LINE_STATE:
-      EP_IN_Transfer(EP0,0,0);
+      usbCoreEpInTransfer(EP0,0,0);
       break;
    }
 }
@@ -98,10 +97,10 @@ static uint8_t interfaceReqHandler(uint8_t ep, tUSB_Setup *pkt)
    switch (pkt->bRequest)
    {
    case GET_INTERFACE:
-      EP_IN_Transfer(ep, &sAltInterface, 1);
+      usbCoreEpInTransfer(ep, &sAltInterface, 1);
       break;
    case GET_LINE_CODING:
-      EP_IN_Transfer(ep, (uint8_t*)&sLineCoding, 7);
+      usbCoreEpInTransfer(ep, (uint8_t*)&sLineCoding, 7);
       break;
    case SET_LINE_CODING:
       sCdcState = SET_LINE_CODING;
@@ -112,7 +111,7 @@ static uint8_t interfaceReqHandler(uint8_t ep, tUSB_Setup *pkt)
       state = uSETUP;
       break;
    case LOADER_MODE:
-      Buffer_Init(sCdcOutData, CDC_BUFFER_SIZE);
+//      ringBufferInit(sCdcOutData, CDC_BUFFER_SIZE);
       usbFlagsHack |= (1 << LOADER);
       sCdcOutData[0] = 0xFF;
       break;

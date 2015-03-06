@@ -8,8 +8,6 @@
 
 #include <stdint.h>
 
-#include "fs_types.h"
-
 /* Macros */
 #define DISABLE_USB (USBCTL0 = 0x00)    // Disable USB module
 #define ENDPOINTS   3
@@ -176,54 +174,54 @@ enum
 /*     */
 
 typedef union _tBDT_STAT
-{    uint8 _byte;
+{    uint8_t _byte;
     struct
     {
-        uint8 :1;
-        uint8 :1;
-        uint8 BSTALL:1;              //Buffer Stall Enable
-        uint8 DTS:1;                 //Data Toggle Synch Enable
-        uint8 NINC:1;                //Address Increment Disable
-        uint8 KEEP:1;                //BD Keep Enable
-        uint8 DATA:1;                //Data Toggle Synch Value
-        uint8 UOWN:1;                //USB Ownership
+        uint8_t :1;
+        uint8_t :1;
+        uint8_t BSTALL:1;              //Buffer Stall Enable
+        uint8_t DTS:1;                 //Data Toggle Synch Enable
+        uint8_t NINC:1;                //Address Increment Disable
+        uint8_t KEEP:1;                //BD Keep Enable
+        uint8_t DATA:1;                //Data Toggle Synch Value
+        uint8_t UOWN:1;                //USB Ownership
     }McuCtlBit;
        
     struct
     {
-        uint8    :2;
-        uint8 PID:4;                 //Packet Identifier
-        uint8    :2;
+        uint8_t    :2;
+        uint8_t PID:4;                 //Packet Identifier
+        uint8_t    :2;
     }RecPid;
 } tBDT_STAT;                         //Buffer Descriptor Status Register
 
 typedef struct _tBDT
 {    tBDT_STAT Stat;
-    uint8  dummy;
-    uint16 Cnt;
-    uint32 Addr;             
+    uint8_t  dummy;
+    uint16_t Cnt;
+    uint32_t Addr;             
 } tBDT;                             
 
 // It's used in some macros here.
 extern tBDT tBDTtable[];
 
 #define SWAP16(val)                                                 \
-    (uint16)((((uint16)(val) >> 0x8) & 0xFF) |                    \
-    (((uint16)(val) & 0xFF) << 0x8))
+    (uint16_t)((((uint16_t)(val) >> 0x8) & 0xFF) |                    \
+    (((uint16_t)(val) & 0xFF) << 0x8))
 
 #define SWAP32(val)                                                 \
-    (uint32)((SWAP16((uint32)(val) & (uint32)0xFFFF) << 0x10) |  \
-    (SWAP16((uint32)((val) >> 0x10))))
+    (uint32_t)((SWAP16((uint32_t)(val) & (uint32_t)0xFFFF) << 0x10) |  \
+    (SWAP16((uint32_t)((val) >> 0x10))))
 
 typedef struct _tUSB_Setup 
-{       uint8 bmRequestType;
-       uint8 bRequest;
-       uint8 wValue_l;
-       uint8 wValue_h;
-       uint8 wIndex_l;
-       uint8 wIndex_h;
-       uint8 wLength_l;
-       uint8 wLength_h;
+{       uint8_t bmRequestType;
+       uint8_t bRequest;
+       uint8_t wValue_l;
+       uint8_t wValue_h;
+       uint8_t wIndex_l;
+       uint8_t wIndex_h;
+       uint8_t wLength_l;
+       uint8_t wLength_h;
 } tUSB_Setup;
 
 #define GET_STATUS              0x00
@@ -232,22 +230,9 @@ typedef struct _tUSB_Setup
 
 typedef uint8_t (*usbInterfaceReqHandler)(uint8_t ep, tUSB_Setup *pkt);
 
-// Function prototypes
-void usbCoreInit(usbInterfaceReqHandler handler);
-
-void USB_Testing_Read_Registers(void);
-void USB_Testing_Write_Registers(void);
-void USB_EP0_IN_Handler(void);
-void EP_IN_Transfer(uint8,uint8*,uint8);
-uint8 EP_OUT_Transfer(uint8,uint8*);
-void USB_Stall_Handler(void);
-void USB_Stall_Handler(void);
-void USB_EP0_OUT_Handler(void);
-void USB_EP0_Stall(void);
-void USB_Set_Interface(void);
-uint16 USB_EP_OUT_SizeCheck(uint8 u8EP);
-void USB_Reset_Handler(void);
-void Custom_Fields_Assignment(void);
-void USB_Endpoint_Setup_Handler(void);
+extern void usbCoreInit(usbInterfaceReqHandler handler);
+extern void usbCoreEpInTransfer(uint8_t ep, uint8_t *data, uint8_t size);
+extern uint8_t  usbCoreEpOutTransfer(uint8_t ep, uint8_t *data);
+extern uint16_t usbCoreEpOutSizeCheck(uint8_t ep);
 
 #endif // _USBCORE_H_

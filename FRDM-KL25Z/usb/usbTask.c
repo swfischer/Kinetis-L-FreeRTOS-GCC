@@ -51,14 +51,14 @@ void usbTaskEntry(void *pParameters)
       // If data transfer arrives
       if (usbFlagsHack & (1 << EP_OUT))
       {
-         (void)USB_EP_OUT_SizeCheck(EP_OUT);
+         usbCoreEpOutSizeCheck(EP_OUT);
          usbEP_Reset(EP_OUT);
          usbSIE_CONTROL(EP_OUT);
 
          usbFlagsHack &= ~(1 << EP_OUT);
 
          // Send it back to the PC
-         EP_IN_Transfer(EP2,CDC_OUTPointer,1);
+         usbCoreEpInTransfer(EP2,CDC_OUTPointer,1);
       }
 
       osDelay(100);
