@@ -12,11 +12,14 @@ A Framework for development on Kinetis-L MCUs.
 
 This code is built and tested via the "arm-none-eabi-gcc" tool chain on an Ubuntu 14.04 virtual machine.
 
-For Ubuntu, the toolchain can be installed via:
+For recent Ubuntu releases, the toolchain can be installed via:
+
+* sudo apt-get install gcc-arm-none-eabi
+
+On older Ubuntu releases, you may need to run these first:
 
 * sudo add-apt-repository ppa:terry.guo/gcc-arm-embedded
 * sudo apt-get update
-* sudo apt-get install gcc-arm-none-eabi
 
 The code can be downloaded via:
 
@@ -64,6 +67,11 @@ In ./apps/*:
 
 * a task which supports the use of the LED in a number of different modes (ledTask.c/h)
 * a console task and supporting files to implement an interactive console which contains a number of commands to interact with the hardware.  Type "help" at the console prompt, "yes?", for a list of commands.
+
+In ./usb/*:
+
+* ported the Freescale CDC USB driver to the framework
+* trying to clean it up and make more sensible/usable
 
 # Contact
 
