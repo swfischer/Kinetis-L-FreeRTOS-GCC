@@ -1,4 +1,30 @@
-
+// ----------------------------------------------------------------------------
+// Copyright (c) 2015, Steven W. Fischer
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this
+//    list of conditions and the following disclaimer. 
+// 2. Redistributions in binary form must reproduce the above copyright notice,
+//    this list of conditions and the following disclaimer in the documentation
+//    and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+// ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+// ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//
+// The views and conclusions contained in the software and documentation are those
+// of the authors and should not be interpreted as representing official policies,
+// either expressed or implied, of the FreeBSD Project.
 // ----------------------------------------------------------------------------
 // Based on the Freescale USB echo device demo
 // ----------------------------------------------------------------------------
@@ -8,70 +34,17 @@
 
 #include <stdint.h>
 
-/* Macros */
-#define DISABLE_USB (USBCTL0 = 0x00)    // Disable USB module
-#define ENDPOINTS   3
-
-/* EP0 settings */
 #define EP0_SIZE            32
-
-/********** Enpoint Value Options ***********/
-/*                                          */
-/* IN       Enabled for IN transactions     */
-/* OUT      Enabled for OUT transactions    */
-/* DISABLE  EndPoint Disabled               */
-/*                                          */
-/********************************************/
-
-/* EP1 settings */
-#define EP1_VALUE           _EP_IN
-#define EP1_TYPE            INTERRUPT
 #define EP1_SIZE            32
-#define EP1_BUFF_OFFSET     0x18
-
-/* EP2 settings */
-#define EP2_VALUE           _EP_IN
-#define EP2_TYPE            BULK
 #define EP2_SIZE            32
-#define EP2_BUFF_OFFSET     0x20
-
-/* EP3 settings */
-#define EP3_VALUE           _EP_OUT
-#define EP3_TYPE            BULK
 #define EP3_SIZE            32
-#define EP3_BUFF_OFFSET     0x28
 
-/* EP4 settings */
-#define EP4_VALUE           DISABLE
-#define EP4_SIZE            1
-#define EP4_BUFF_OFFSET     0x08
-
-/* EP5 settings */
-#define EP5_VALUE           DISABLE
-#define EP5_SIZE            1
-#define EP5_BUFF_OFFSET     0x08
-
-/* EP6 settings */
-#define EP6_VALUE           DISABLE
-#define EP6_SIZE            1
-#define EP6_BUFF_OFFSET     0x08
-
-/* Macros */
+// Macros
 #define EP3_CTR   tBDTtable[4].Stat._byte= kSIE 
 
-/* MACROS */
-#define usbSIE_CONTROL(EP)   (tBDTtable[EP<<2].Stat._byte= kSIE)
-#define usbMCU_CONTROL(EP)   (tBDTtable[EP<<2].Stat._byte= kMCU)
-#define usbEP_Reset(EP)      (tBDTtable[EP<<2].Cnt=0x0020)
-
-#define _EP_IN      USB_ENDPT_EPTXEN_MASK
-#define _EP_OUT     USB_ENDPT_EPRXEN_MASK
-
-//USB0_ENDPT_EPTXEN_MASK
-
-//USB0_ENDPT_EPRXEN_MASK
-
-#define DISABLE 0
+#define usbSIE_CONTROL(EP)   (tBDTtable[EP<<2].Stat._byte = kSIE)
+#define usbMCU_CONTROL(EP)   (tBDTtable[EP<<2].Stat._byte = kMCU)
+#define usbEP_Reset(EP)      (tBDTtable[EP<<2].Cnt = 0x0020)
 
 #define INTERRUPT   0x03
 #define BULK        0x05
@@ -83,13 +56,11 @@
 #define kUDATA0   0x88
 #define kUDATA1   0xC8
 
-                            
-
 #define mSETUP_TOKEN    0x0D
 #define mOUT_TOKEN      0x01
 #define mIN_TOKEN       0x09
 
-    // USB commands
+// USB commands
 #define mGET_STATUS           0
 #define mCLR_FEATURE          1
 #define mSET_FEATURE          3
@@ -114,7 +85,7 @@
 
 #define mREPORT                     0x22
 
-/* Request Types */
+// Request Types
 #define STANDARD_REQ    0x00
 #define SPECIFIC_REQ    0x20
 #define VENDORSPEC_REQ  0x40

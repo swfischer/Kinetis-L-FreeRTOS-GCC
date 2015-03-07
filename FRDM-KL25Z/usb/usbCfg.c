@@ -23,7 +23,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 // The views and conclusions contained in the software and documentation are those
-// of the authors and should not be interpreted as representing official policies, 
+// of the authors and should not be interpreted as representing official policies,
 // either expressed or implied, of the FreeBSD Project.
 // ----------------------------------------------------------------------------
 
@@ -132,12 +132,35 @@ const usbCfg_t usbCfg =
   }
 };
 
-const usbStringDesc_t usbCfgLanguages =
+static const usbStringDesc_t usbCfgLanguages =
 { sizeof(usbStringDesc_t) // bLength
 , USB_STRING_DESC // bDescType
 , { 0x09, 0x04 } // American English
 };
 
-const usbStringDesc_t usbCfgManufacturer = USB_STRING("F\0r\0e\0e\0s\0c\0a\0l\0e\0");
-const usbStringDesc_t usbCfgProduct      = USB_STRING("U\0S\0B\0-\0U\0A\0R\0T\0");
-const usbStringDesc_t usbCfgSerialNumber = USB_STRING("0\00\00\01\0");
+static const usbStringDesc_t usbCfgManufacturer = USB_STRING("F\0r\0e\0e\0s\0c\0a\0l\0e\0");
+static const usbStringDesc_t usbCfgProduct      = USB_STRING("U\0S\0B\0-\0U\0A\0R\0T\0");
+static const usbStringDesc_t usbCfgSerialNumber = USB_STRING("0\00\00\01\0");
+
+const uint8_t* usbCfgStringTable[] =
+{ (uint8_t*) &usbCfgLanguages
+, (uint8_t*) &usbCfgManufacturer
+, (uint8_t*) &usbCfgProduct
+, (uint8_t*) &usbCfgSerialNumber
+};
+
+// ----------------------------------------------------------------------------
+// External Functions
+// ----------------------------------------------------------------------------
+
+bool usbCfgIsEpIN(uint8_t ep)
+{
+   bool in = false;
+
+   if (ep == 1 || ep == 2)
+   {
+      in = true;
+   }
+
+   return in;
+}

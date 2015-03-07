@@ -23,12 +23,15 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 // The views and conclusions contained in the software and documentation are those
-// of the authors and should not be interpreted as representing official policies, 
+// of the authors and should not be interpreted as representing official policies,
 // either expressed or implied, of the FreeBSD Project.
 // ----------------------------------------------------------------------------
 
 #ifndef _USBCFG_H_
 #define _USBCFG_H_
+
+#include <stdint.h>
+#include <stdbool.h>
 
 #include "usb.h"
 
@@ -40,17 +43,18 @@ typedef struct __attribute__((packed))
    usbCdcCallMgtDesc_t  cdcCm;
    usbCdcAcmDesc_t      cdcAcm;
    usbCdcUnionDesc_t    cdcUnion;
-   usbEndpointDesc_t    ep0;
-   usbInterfaceDesc_t   inf1;
    usbEndpointDesc_t    ep1;
+   usbInterfaceDesc_t   inf1;
    usbEndpointDesc_t    ep2;
+   usbEndpointDesc_t    ep3;
 } usbCfg_t;
 
+#define USBCFG_EP_COUNT (3)
+
 extern const usbDeviceDesc_t usbCfgDevDesc;
-extern const usbCfg_t        usbCfg;
-extern const usbStringDesc_t usbCfgLanguages;
-extern const usbStringDesc_t usbCfgManufacturer;
-extern const usbStringDesc_t usbCfgProduct;
-extern const usbStringDesc_t usbCfgSerialNumber;
+extern const usbCfg_t usbCfg;
+extern const uint8_t* usbCfgStringTable[];
+
+extern bool usbCfgIsEpIN(uint8_t ep);
 
 #endif // _USBCFG_H_
