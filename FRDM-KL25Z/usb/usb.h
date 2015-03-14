@@ -32,12 +32,21 @@
 
 #include <stdint.h>
 
+// Values for PID tokens
+#define USB_PID_TOKEN_OUT     (0x1)
+#define USB_PID_TOKEN_SOF     (0x5)
+#define USB_PID_TOKEN_IN      (0x9)
+#define USB_PID_TOKEN_SETUP   (0xd)
+
 // Values for bDescType fields
-#define USB_DEVICE_DESC       (0x01)
-#define USB_CONFIG_DESC       (0x02)
-#define USB_STRING_DESC       (0x03)
-#define USB_INTERFACE_DESC    (0x04)
-#define USB_ENDPOINT_DESC     (0x05)
+#define USB_DEVICE_DESC             (1)
+#define USB_CONFIG_DESC             (2)
+#define USB_STRING_DESC             (3)
+#define USB_INTERFACE_DESC          (4)
+#define USB_ENDPOINT_DESC           (5)
+#define USB_DEVICE_QUALIFIER_DESC   (6)
+#define USB_OTHER_SPEED_CFG_DESC    (7)
+#define USB_INTEFACE_PWR_DESC       (8)
 
 // Values for the device descriptor bcdUSB field
 #define USB_BCD_USB_1_0 (0x0100)
@@ -156,7 +165,7 @@ typedef struct usb_string
 #define USB_REQ_TYPE_TO_INTERFACE   (1 << 0)
 #define USB_REQ_TYPE_TO_ENDPOINT    (2 << 0)
 #define USB_REQ_TYPE_TO_OTHER       (3 << 0)
-#define USB_REQ_TYPE_TO_MASK        (3 << 0)
+#define USB_REQ_TYPE_TO_MASK        (0x1f << 0)
 #define USB_REQ_TYPE_TYPE_STANDARD  (0 << 5)
 #define USB_REQ_TYPE_TYPE_CLASS     (1 << 5)
 #define USB_REQ_TYPE_TYPE_VENDOR    (2 << 5)
@@ -176,14 +185,29 @@ typedef struct usb_string
 #define USB_REQ_SET_INTERFACE    (11)
 #define USB_REQ_SYNC_FRAME       (12)
 
-// Setup Packet - assumes compiler is little endian
+typedef struct
+{
+   uint8_t lo;
+   uint8_t hi;
+} le16_t;
+
+typedef struct
+{
+   union
+   {
+      uint16_t word; // this only works for little-endian compilers
+      le16_t   bytes;
+   };
+} utf16le_t;
+
+// Setup Packet
 typedef struct
 {
    uint8_t  bmRequestType;
    uint8_t  bRequest;
-   uint16_t wValue;
-   uint16_t wIndex;
-   uint16_t wLength;
+   utf16le_t wValue;
+   utf16le_t wIndex;
+   utf16le_t wLength;
 } usbSetupPacket_t;
 
 // CDC descriptor type values, bDescType

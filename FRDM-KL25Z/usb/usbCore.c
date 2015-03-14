@@ -37,29 +37,31 @@
 #include "irq.h"
 #include "kinetis.h"
 #include "os.h"
+#include "usb.h"
 #include "usbCfg.h"
 #include "usbCore.h"
+#include "utils.h"
 
 // Arrays and global buffers
 
-tBDT tBDTtable[16] __attribute__((__aligned__(512)));
+bdt_t bdtTable[USBCFG_BDT_ENTRY_COUNT] __attribute__((__aligned__(512)));
 
-uint8_t gu8EP0_OUT_ODD_Buffer[EP0_SIZE];
-uint8_t gu8EP0_OUT_EVEN_Buffer[EP0_SIZE];
-uint8_t gu8EP0_IN_ODD_Buffer[EP0_SIZE];
-uint8_t gu8EP0_IN_EVEN_Buffer[EP0_SIZE];
-uint8_t gu8EP1_OUT_ODD_Buffer[EP1_SIZE];
-uint8_t gu8EP1_OUT_EVEN_Buffer[EP1_SIZE];
-uint8_t gu8EP1_IN_ODD_Buffer[EP1_SIZE];
-uint8_t gu8EP1_IN_EVEN_Buffer[EP1_SIZE];
-uint8_t gu8EP2_OUT_ODD_Buffer[EP2_SIZE];
-uint8_t gu8EP2_OUT_EVEN_Buffer[EP2_SIZE];
-uint8_t gu8EP2_IN_ODD_Buffer[EP2_SIZE];
-uint8_t gu8EP2_IN_EVEN_Buffer[EP2_SIZE];
-uint8_t gu8EP3_OUT_ODD_Buffer[EP3_SIZE];
-uint8_t gu8EP3_OUT_EVEN_Buffer[EP3_SIZE];
-uint8_t gu8EP3_IN_ODD_Buffer[EP3_SIZE];
-uint8_t gu8EP3_IN_EVEN_Buffer[EP3_SIZE];
+uint8_t gu8EP0_OUT_ODD_Buffer[USBCFG_EP0_SIZE];
+uint8_t gu8EP0_OUT_EVEN_Buffer[USBCFG_EP0_SIZE];
+uint8_t gu8EP0_IN_ODD_Buffer[USBCFG_EP0_SIZE];
+uint8_t gu8EP0_IN_EVEN_Buffer[USBCFG_EP0_SIZE];
+uint8_t gu8EP1_OUT_ODD_Buffer[USBCFG_EP1_SIZE];
+uint8_t gu8EP1_OUT_EVEN_Buffer[USBCFG_EP1_SIZE];
+uint8_t gu8EP1_IN_ODD_Buffer[USBCFG_EP1_SIZE];
+uint8_t gu8EP1_IN_EVEN_Buffer[USBCFG_EP1_SIZE];
+uint8_t gu8EP2_OUT_ODD_Buffer[USBCFG_EP2_SIZE];
+uint8_t gu8EP2_OUT_EVEN_Buffer[USBCFG_EP2_SIZE];
+uint8_t gu8EP2_IN_ODD_Buffer[USBCFG_EP2_SIZE];
+uint8_t gu8EP2_IN_EVEN_Buffer[USBCFG_EP2_SIZE];
+uint8_t gu8EP3_OUT_ODD_Buffer[USBCFG_EP3_SIZE];
+uint8_t gu8EP3_OUT_EVEN_Buffer[USBCFG_EP3_SIZE];
+uint8_t gu8EP3_IN_ODD_Buffer[USBCFG_EP3_SIZE];
+uint8_t gu8EP3_IN_EVEN_Buffer[USBCFG_EP3_SIZE];
 
 uint8_t *BufferPointer[] =
 {
@@ -82,10 +84,10 @@ uint8_t *BufferPointer[] =
 };
 
 const uint8_t sEpSize[] = // FIXME: This should really be part of usbCfg.c/h
-{ EP0_SIZE, EP0_SIZE, EP0_SIZE, EP0_SIZE
-, EP1_SIZE, EP1_SIZE, EP1_SIZE, EP1_SIZE
-, EP2_SIZE, EP2_SIZE, EP2_SIZE, EP2_SIZE
-, EP3_SIZE, EP3_SIZE, EP3_SIZE, EP3_SIZE
+{ USBCFG_EP0_SIZE, USBCFG_EP0_SIZE, USBCFG_EP0_SIZE, USBCFG_EP0_SIZE
+, USBCFG_EP1_SIZE, USBCFG_EP1_SIZE, USBCFG_EP1_SIZE, USBCFG_EP1_SIZE
+, USBCFG_EP2_SIZE, USBCFG_EP2_SIZE, USBCFG_EP2_SIZE, USBCFG_EP2_SIZE
+, USBCFG_EP3_SIZE, USBCFG_EP3_SIZE, USBCFG_EP3_SIZE, USBCFG_EP3_SIZE
 };
 
 // Global Variables for USB Handling
@@ -101,7 +103,7 @@ uint8_t gu8USB_PingPong_flags;
 //uint8_t gu8Dummy;
 uint8_t gu8HALT_EP;
 
-static tUSB_Setup *sSetupPkt;
+static usbSetupPacket_t *sSetupPkt;
 static usbInterfaceReqHandler sInterfaceReqHandler = NULL;
 
 static void ep0InHandler(void);
@@ -126,7 +128,7 @@ void usbCoreInit(usbInterfaceReqHandler handler)
 
    // Software Configuration
 
-   sSetupPkt = (tUSB_Setup*)BufferPointer[bEP0OUT_ODD];
+   sSetupPkt = (usbSetupPacket_t*) BufferPointer[bEP0OUT_ODD];
    usbStateHack = uPOWER;
 
    // MPU Configuration
@@ -143,9 +145,9 @@ void usbCoreInit(usbInterfaceReqHandler handler)
       ;
 
    // Set BDT Base Register
-   USB0_BDTPAGE1 = (uint8_t)((uint32_t)tBDTtable>>8);
-   USB0_BDTPAGE2 = (uint8_t)((uint32_t)tBDTtable>>16);
-   USB0_BDTPAGE3 = (uint8_t)((uint32_t)tBDTtable>>24);
+   USB0_BDTPAGE1 = (uint8_t)((uint32_t) bdtTable >>  8);
+   USB0_BDTPAGE2 = (uint8_t)((uint32_t) bdtTable >> 16);
+   USB0_BDTPAGE3 = (uint8_t)((uint32_t) bdtTable >> 24);
 
    // Clear USB Reset flag
    FLAG_SET(USB_ISTAT_USBRST_MASK,USB0_ISTAT);
@@ -188,10 +190,10 @@ void usbCoreEpInTransfer(uint8_t u8EP, uint8_t *pu8DataPointer, uint8_t u8DataSi
       sInData = pu8DataPointer;
       sInCounter = u8DataSize;
 
-      length = (sSetupPkt->wLength_h << 8) + sSetupPkt->wLength_l;
+      length = (sSetupPkt->wLength.bytes.hi << 8) + sSetupPkt->wLength.bytes.lo;
       if ((length < u8DataSize) && (u8EP == 2))
       {
-         sInCounter = sSetupPkt->wLength_l;
+         sInCounter = sSetupPkt->wLength.bytes.lo;
       }
    }
 
@@ -210,22 +212,22 @@ void usbCoreEpInTransfer(uint8_t u8EP, uint8_t *pu8DataPointer, uint8_t u8DataSi
    }
 
    // Copy User buffer to EP buffer
-   tBDTtable[u8EP].Cnt = (u8EPSize);
+   bdtTable[u8EP].cnt = (u8EPSize);
 
-   while(u8EPSize--)
+   while (u8EPSize--)
    {
       *pu8EPBuffer++=*sInData++;
    }
 
    // USB Flags Handling
-   if(FLAG_CHK(u8EndPointFlag, sToogleFlags))
+   if (FLAG_CHK(u8EndPointFlag, sToogleFlags))
    {
-      tBDTtable[u8EP].Stat._byte = kUDATA0;
+      bdtTable[u8EP].stat = kUDATA0;
       FLAG_CLR(u8EndPointFlag, sToogleFlags);
    }
    else
    {
-      tBDTtable[u8EP].Stat._byte = kUDATA1;
+      bdtTable[u8EP].stat = kUDATA1;
       FLAG_SET(u8EndPointFlag, sToogleFlags);
    }
 }
@@ -242,7 +244,7 @@ uint8_t usbCoreEpOutTransfer(uint8_t u8EP, uint8_t *pu8DataPointer)
    pu8EPBuffer = BufferPointer[u8EP];
 
    // Copy User buffer to EP buffer
-   u8EPSize = tBDTtable[u8EP].Cnt;
+   u8EPSize = bdtTable[u8EP].cnt;
    u8EP = u8EPSize;
 
    while (u8EPSize--)
@@ -257,7 +259,7 @@ uint16_t usbCoreEpOutSizeCheck(uint8_t ep)
    uint8_t u8EPSize;
 
    // Read Buffer Size
-   u8EPSize = SWAP16(tBDTtable[ep << 2].Cnt);
+   u8EPSize = utilsSwap16(bdtTable[ep << 2].cnt);
 
    return (u8EPSize & 0x03FF);
 }
@@ -270,7 +272,7 @@ static void ep0InHandler(void)
 {
    if (usbStateHack == uADDRESS)
    {
-      USB0_ADDR = sSetupPkt->wValue_l;
+      USB0_ADDR = sSetupPkt->wValue.bytes.lo;
       usbStateHack = uREADY;
       FLAG_SET(fIN, sClearFlags);
    }
@@ -280,38 +282,34 @@ static void ep0InHandler(void)
 static void ep0OutHandler(void)
 {
    FLAG_SET(EP0, usbFlagsHack);
-   tBDTtable[bEP0OUT_ODD].Stat._byte = kUDATA0;
+   bdtTable[bEP0OUT_ODD].stat = kUDATA0;
 }
 
 static void ep0Stall(void)
 {
    FLAG_SET(USB_ENDPT_EPSTALL_SHIFT, USB0_ENDPT0);
-   tBDTtable[bEP0OUT_ODD].Stat._byte = kUDATA0;
-   tBDTtable[bEP0OUT_ODD].Cnt = EP0_SIZE;
+   bdtTable[bEP0OUT_ODD].stat = kUDATA0;
+   bdtTable[bEP0OUT_ODD].cnt = USBCFG_EP0_SIZE;
 }
 
 static void epSetupHandler(void)
 {
    static uint8_t sEpHalt = 0;
-   uint16_t u16Status;
+   uint16_t status;
 
    switch(sSetupPkt->bRequest)
    {
-   case GET_STATUS:
-      if(FLAG_CHK(sSetupPkt->wIndex_h, sEpHalt))
-         u16Status = 0x0100;
-      else
-         u16Status = 0x0000;
-
-      usbCoreEpInTransfer(EP0, (uint8_t*)&u16Status, 2);
+   case USB_REQ_GET_STATUS:
+      status = (FLAG_CHK(sSetupPkt->wIndex.bytes.hi, sEpHalt)) ? 0x0100 : 0x0000;
+      usbCoreEpInTransfer(EP0, (uint8_t*) &status, 2);
       break;
-   case CLEAR_FEATURE:
-      FLAG_CLR(sSetupPkt->wIndex_h, sEpHalt);
-      usbCoreEpInTransfer(EP0,0,0);
+   case USB_REQ_CLR_FEATURE:
+      FLAG_CLR(sSetupPkt->wIndex.bytes.hi, sEpHalt);
+      usbCoreEpInTransfer(EP0, 0, 0);
       break;
-   case SET_FEATURE:
-      FLAG_SET(sSetupPkt->wIndex_h, sEpHalt);
-      usbCoreEpInTransfer(EP0,0,0);
+   case USB_REQ_SET_FEATURE:
+      FLAG_SET(sSetupPkt->wIndex.bytes.hi, sEpHalt);
+      usbCoreEpInTransfer(EP0, 0, 0);
       break;
    default:
       break;
@@ -389,21 +387,21 @@ static void resetHandler(void)
 
    // EP0 BDT Setup
    // EP0 OUT BDT Settings
-   tBDTtable[bEP0OUT_ODD].Cnt = EP0_SIZE;
-   tBDTtable[bEP0OUT_ODD].Addr = (uint32_t)gu8EP0_OUT_ODD_Buffer;
-   tBDTtable[bEP0OUT_ODD].Stat._byte = kUDATA1;
+   bdtTable[bEP0OUT_ODD].cnt = USBCFG_EP0_SIZE;
+   bdtTable[bEP0OUT_ODD].addr = (uint32_t) gu8EP0_OUT_ODD_Buffer;
+   bdtTable[bEP0OUT_ODD].stat = kUDATA1;
    // EP0 OUT BDT Settings
-   tBDTtable[bEP0OUT_EVEN].Cnt = EP0_SIZE;
-   tBDTtable[bEP0OUT_EVEN].Addr = (uint32_t)gu8EP0_OUT_EVEN_Buffer;
-   tBDTtable[bEP0OUT_EVEN].Stat._byte = kUDATA1;
+   bdtTable[bEP0OUT_EVEN].cnt = USBCFG_EP0_SIZE;
+   bdtTable[bEP0OUT_EVEN].addr = (uint32_t) gu8EP0_OUT_EVEN_Buffer;
+   bdtTable[bEP0OUT_EVEN].stat = kUDATA1;
    // EP0 IN BDT Settings
-   tBDTtable[bEP0IN_ODD].Cnt = EP0_SIZE;
-   tBDTtable[bEP0IN_ODD].Addr = (uint32_t)gu8EP0_IN_ODD_Buffer;
-   tBDTtable[bEP0IN_ODD].Stat._byte = kUDATA0;
+   bdtTable[bEP0IN_ODD].cnt = USBCFG_EP0_SIZE;
+   bdtTable[bEP0IN_ODD].addr = (uint32_t) gu8EP0_IN_ODD_Buffer;
+   bdtTable[bEP0IN_ODD].stat = kUDATA0;
    // EP0 IN BDT Settings
-   tBDTtable[bEP0IN_EVEN].Cnt = (EP0_SIZE);
-   tBDTtable[bEP0IN_EVEN].Addr =(uint32_t)gu8EP0_IN_EVEN_Buffer;
-   tBDTtable[bEP0IN_EVEN].Stat._byte = kUDATA0;
+   bdtTable[bEP0IN_EVEN].cnt = USBCFG_EP0_SIZE;
+   bdtTable[bEP0IN_EVEN].addr = (uint32_t) gu8EP0_IN_EVEN_Buffer;
+   bdtTable[bEP0IN_EVEN].stat = kUDATA0;
 
    // Enable EP0
    USB0_ENDPT0 = 0x0D;
@@ -434,7 +432,7 @@ static void setInterface(void)
 
    // FIXME: Should all EPs be disabled first?
 
-   for (i = 1; i <= USBCFG_EP_COUNT; i++)
+   for (i = 1; i < USBCFG_EP_COUNT; i++)
    {
       ep_mask  = USB_ENDPT_EPHSHK_MASK;
       ep_mask |= (usbCfgIsEpIN(i)) ? USB_ENDPT_EPTXEN_MASK : USB_ENDPT_EPRXEN_MASK;
@@ -442,46 +440,51 @@ static void setInterface(void)
    }
 
    // EndPoint 1 BDT Settings
-   tBDTtable[bEP1IN_ODD].Stat._byte = kMCU;
-   tBDTtable[bEP1IN_ODD].Cnt = 0x00;
-   tBDTtable[bEP1IN_ODD].Addr = (uint32_t)gu8EP1_IN_ODD_Buffer;
+   bdtTable[bEP1IN_ODD].stat = kMCU;
+   bdtTable[bEP1IN_ODD].cnt = 0x00;
+   bdtTable[bEP1IN_ODD].addr = (uint32_t) gu8EP1_IN_ODD_Buffer;
 
    // EndPoint 2 BDT Settings
-   tBDTtable[bEP2IN_ODD].Stat._byte = kMCU;
-   tBDTtable[bEP2IN_ODD].Cnt = 0x00;
-   tBDTtable[bEP2IN_ODD].Addr = (uint32_t)gu8EP2_IN_ODD_Buffer;
+   bdtTable[bEP2IN_ODD].stat = kMCU;
+   bdtTable[bEP2IN_ODD].cnt = 0x00;
+   bdtTable[bEP2IN_ODD].addr = (uint32_t) gu8EP2_IN_ODD_Buffer;
 
    // EndPoint 3 BDT Settings
-   tBDTtable[bEP3OUT_ODD].Stat._byte= kSIE;
-   tBDTtable[bEP3OUT_ODD].Cnt = 0xFF;
-   tBDTtable[bEP3OUT_ODD].Addr = (uint32_t)gu8EP3_OUT_ODD_Buffer;
+   bdtTable[bEP3OUT_ODD].stat = kSIE;
+   bdtTable[bEP3OUT_ODD].cnt = 0xFF;
+   bdtTable[bEP3OUT_ODD].addr = (uint32_t) gu8EP3_OUT_ODD_Buffer;
 }
 
 static void setupHandler(void)
 {
-   uint8_t u8State;
+   uint8_t state;
 
    FLAG_CLR(0, sToogleFlags);
-   switch (sSetupPkt->bmRequestType & 0x1F)
+
+   switch (sSetupPkt->bmRequestType & USB_REQ_TYPE_TO_MASK)
    {
-   case DEVICE_REQ:
-      if ((sSetupPkt->bmRequestType & 0x1F)== STANDARD_REQ)
+   case USB_REQ_TYPE_TO_DEVICE:
+      if ((sSetupPkt->bmRequestType & USB_REQ_TYPE_TYPE_MASK) == USB_REQ_TYPE_TYPE_STANDARD)
       {
          standardReqHandler();
       }
-      tBDTtable[bEP0OUT_ODD].Stat._byte = kUDATA0;
+      bdtTable[bEP0OUT_ODD].stat = kUDATA0;
       break;
-   case INTERFACE_REQ:
-      u8State = sInterfaceReqHandler(EP0, sSetupPkt);
+   case USB_REQ_TYPE_TO_INTERFACE:
+      state = sInterfaceReqHandler(EP0, sSetupPkt);
 
-      if (u8State == uSETUP)
-         tBDTtable[bEP0OUT_ODD].Stat._byte = kUDATA0;
+      if (state == uSETUP)
+      {
+         bdtTable[bEP0OUT_ODD].stat = kUDATA0;
+      }
       else
-         tBDTtable[bEP0OUT_ODD].Stat._byte = kUDATA1;
+      {
+         bdtTable[bEP0OUT_ODD].stat = kUDATA1;
+      }
       break;
-   case ENDPOINT_REQ:
+   case USB_REQ_TYPE_TO_ENDPOINT:
       epSetupHandler();
-      tBDTtable[bEP0OUT_ODD].Stat._byte = kUDATA0;
+      bdtTable[bEP0OUT_ODD].stat = kUDATA0;
       break;
    default:
       ep0Stall();
@@ -507,23 +510,23 @@ static void standardReqHandler(void)
 
    switch (sSetupPkt->bRequest)
    {
-   case mSET_ADDRESS:
+   case USB_REQ_SET_ADDRESS:
       usbCoreEpInTransfer(EP0,0,0);
       usbStateHack = uADDRESS;
       break;
-   case mGET_DESC:
-      switch (sSetupPkt->wValue_h)
+   case USB_REQ_GET_DESC:
+      switch (sSetupPkt->wValue.bytes.hi)
       {
-      case mDEVICE:
+      case USB_DEVICE_DESC:
          usbCoreEpInTransfer(EP0, (uint8_t*)&usbCfgDevDesc, sizeof(usbCfgDevDesc));
          break;
-      case mCONFIGURATION:
+      case USB_CONFIG_DESC:
          usbCoreEpInTransfer(EP0, (uint8_t*)&usbCfg, sizeof(usbCfg));
          break;
-      case mSTRING:
+      case USB_STRING_DESC:
          usbCoreEpInTransfer( EP0
-                            , (uint8_t*) usbCfgStringTable[sSetupPkt->wValue_l]
-                            , usbCfgStringTable[sSetupPkt->wValue_l][0]
+                            , (uint8_t*) usbCfgStringTable[sSetupPkt->wValue.bytes.lo]
+                            , usbCfgStringTable[sSetupPkt->wValue.bytes.lo][0]
                             );
          break;
       default:
@@ -531,21 +534,21 @@ static void standardReqHandler(void)
          break;
       }
       break;
-   case mSET_CONFIG:
-      sConfig = sSetupPkt->wValue_h + sSetupPkt->wValue_l;
-      if (sSetupPkt->wValue_h + sSetupPkt->wValue_l)
+   case USB_REQ_SET_CONFIG:
+      sConfig = sSetupPkt->wValue.bytes.hi + sSetupPkt->wValue.bytes.lo;
+      if (sSetupPkt->wValue.bytes.hi + sSetupPkt->wValue.bytes.lo)
       {
          setInterface();
-         usbCoreEpInTransfer(EP0,0,0);
+         usbCoreEpInTransfer(EP0, 0, 0);
          usbStateHack = uENUMERATED;
       }
       break;
-   case mGET_CONFIG:
-      usbCoreEpInTransfer(EP0, (uint8_t*)&sConfig, 1);
+   case USB_REQ_GET_CONFIG:
+      usbCoreEpInTransfer(EP0, (uint8_t*) &sConfig, 1);
       break;
-   case mGET_STATUS:
+   case USB_REQ_GET_STATUS:
       status = 0;
-      usbCoreEpInTransfer(EP0, (uint8_t*)&status, 2);
+      usbCoreEpInTransfer(EP0, (uint8_t*) &status, 2);
       break;
    default:
       ep0Stall();
@@ -579,7 +582,7 @@ static void tokenHandler(void)
       }
       else
       {
-         if(tBDTtable[bEP0OUT_ODD].Stat.RecPid.PID == mSETUP_TOKEN)
+         if (usbCoreBdtGetPid(bdtTable[bEP0OUT_ODD].stat) == USB_PID_TOKEN_SETUP)
          {
             setupHandler();
          }

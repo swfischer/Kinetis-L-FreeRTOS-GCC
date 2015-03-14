@@ -52,7 +52,7 @@ static uint8_t sAltInterface = 0;  // should be coordinated with interface descr
 static usbCdcLineCoding_t sLineCoding;
 
 // Local function prototypes
-static uint8_t interfaceReqHandler(uint8_t ep, tUSB_Setup *pkt);
+static uint8_t interfaceReqHandler(uint8_t ep, usbSetupPacket_t *pkt);
 
 // ----------------------------------------------------------------------------
 // External Functions
@@ -116,7 +116,7 @@ void usbCdcEngine(void)
 // Local Functions
 // ----------------------------------------------------------------------------
 
-static uint8_t interfaceReqHandler(uint8_t ep, tUSB_Setup *pkt)
+static uint8_t interfaceReqHandler(uint8_t ep, usbSetupPacket_t *pkt)
 {
    uint8_t state = uSETUP;
 
