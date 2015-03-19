@@ -30,6 +30,7 @@
 // ----------------------------------------------------------------------------
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "kinetis.h"
 #include "os.h"
@@ -46,9 +47,12 @@ extern uint8_t usbStateHack;
 // Not really used, but could be used to denote VBUS state changes
 volatile uint8_t usbCdcIsrFlags = 0;
 
-static uint8_t sCdcState = WAITING_FOR_ENUMERATION;
-static uint8_t sCdcOutData[CDC_BUFFER_SIZE];
-static uint8_t sAltInterface = 0;  // should be coordinated with interface descriptor
+#define EVENT_SET_LINE_CODING       (1 << 0)
+#define EVENT_SET_CTRL_LINE_STATE   (1 << 1)
+static uint8_t sEventFlags = 0;
+static bool    sDteActive = 0;
+
+static uint8_t sAltInterface = 0;  // FIXME: should be coordinated with interface descriptor
 static usbCdcLineCoding_t sLineCoding;
 
 // Local function prototypes
@@ -60,8 +64,6 @@ static uint8_t interfaceReqHandler(uint8_t ep, usbSetupPacket_t *pkt);
 
 void usbCdcInit(void)
 {
-   sCdcState = WAITING_FOR_ENUMERATION;
-
    // USB core initialization
    usbCoreInit(interfaceReqHandler);
 
@@ -70,9 +72,6 @@ void usbCdcInit(void)
    sLineCoding.charFormat = 0;
    sLineCoding.parityType = 0;
    sLineCoding.databits   = 8;
-
-   // Initialize Data Buffers
-//   ringBufferInit(sCdcOutData, CDC_BUFFER_SIZE);
 }
 
 void usbCdcEngine(void)
@@ -86,29 +85,35 @@ void usbCdcEngine(void)
       usbCdcInit();
    }
 
-   switch(sCdcState)
+   if (sEventFlags)
    {
-   case WAITING_FOR_ENUMERATION:
+      if (sEventFlags && EVENT_SET_LINE_CODING)
+      {
+         if (usbFlagsHack & (1 << EP0))
+         {
+            usbFlagsHack &= ~(1 << EP0);
+
+            usbCoreEpOutTransfer(EP0, (uint8_t*) &sLineCoding);
+            usbCoreEpInTransfer(EP0, 0, 0);
+         }
+
+         sEventFlags &= ~(EVENT_SET_LINE_CODING);
+      }
+      
+      if (sEventFlags && EVENT_SET_CTRL_LINE_STATE)
+      {
+         usbCoreEpInTransfer(EP0, 0, 0);
+         
+         sEventFlags &= ~(EVENT_SET_CTRL_LINE_STATE);
+      }
+   }
+   else
+   {
       // Wait for USB Enumeration
       while (usbStateHack != uENUMERATED)
       {
          osDelay(500); // slow things down to allow other tasks to run
       };
-
-      sCdcState = WAITING_FOR_ENUMERATION;
-      break;
-   case SET_LINE_CODING:
-      if (usbFlagsHack & (1 << EP0))
-      {
-         usbFlagsHack &= ~(1 << EP0);
-
-         usbCoreEpOutTransfer(EP0, (uint8_t*)&sLineCoding);
-         usbCoreEpInTransfer(EP0,0,0);
-      }
-      break;
-   case SET_CONTROL_LINE_STATE:
-      usbCoreEpInTransfer(EP0,0,0);
-      break;
    }
 }
 
@@ -122,24 +127,20 @@ static uint8_t interfaceReqHandler(uint8_t ep, usbSetupPacket_t *pkt)
 
    switch (pkt->bRequest)
    {
-   case GET_INTERFACE:
+   case USB_REQ_GET_INTERFACE:
       usbCoreEpInTransfer(ep, &sAltInterface, 1);
       break;
-   case GET_LINE_CODING:
-      usbCoreEpInTransfer(ep, (uint8_t*)&sLineCoding, 7);
+   case USB_CDC_REQ_GET_LINE_CODING:
+      usbCoreEpInTransfer(ep, (uint8_t*)&sLineCoding, sizeof(sLineCoding)); //7);
       break;
-   case SET_LINE_CODING:
-      sCdcState = SET_LINE_CODING;
+   case USB_CDC_REQ_SET_LINE_CODING:
+      sEventFlags |= EVENT_SET_LINE_CODING;
       state = uDATA;
       break;
-   case SET_CONTROL_LINE_STATE:
-      sCdcState = SET_CONTROL_LINE_STATE;
+   case USB_CDC_REQ_SET_CTRL_LINE_STATE:
+      sDteActive = (pkt->wValue.word & USB_CDC_SCLS_DTE_PRESENT) ? true : false;
+      sEventFlags |= EVENT_SET_CTRL_LINE_STATE;
       state = uSETUP;
-      break;
-   case LOADER_MODE:
-//      ringBufferInit(sCdcOutData, CDC_BUFFER_SIZE);
-      usbFlagsHack |= (1 << LOADER);
-      sCdcOutData[0] = 0xFF;
       break;
    }
 

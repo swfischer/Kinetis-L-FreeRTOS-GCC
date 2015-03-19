@@ -38,8 +38,14 @@
 extern uint8_t usbFlagsHack; 
 extern uint8_t gu8EP3_OUT_ODD_Buffer[];
 
+// ----------------------------------------------------------------------------
+// External Functions
+// ----------------------------------------------------------------------------
+
 void usbTaskEntry(void *pParameters)
 {
+   uint16_t x;
+
    osDelay(5000); // this is a bit of a hack just to allow for console debugging
 
    usbCdcInit();
@@ -51,16 +57,21 @@ void usbTaskEntry(void *pParameters)
       // If data transfer arrives
       if (usbFlagsHack & (1 << EP_OUT))
       {
-         usbCoreEpOutSizeCheck(EP_OUT);
+         x = usbCoreEpOutSizeCheck(EP_OUT);
+
          usbEP_Reset(EP_OUT);
          usbSIE_CONTROL(EP_OUT);
 
          usbFlagsHack &= ~(1 << EP_OUT);
 
          // Send it back to the PC
-         usbCoreEpInTransfer(EP2,CDC_OUTPointer,1);
+         usbCoreEpInTransfer(EP2, CDC_OUTPointer, x);
       }
 
       osDelay(100);
    }
 }
+
+// ----------------------------------------------------------------------------
+// Local Functions
+// ----------------------------------------------------------------------------

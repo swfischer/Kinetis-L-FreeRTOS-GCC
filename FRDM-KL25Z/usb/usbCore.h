@@ -35,13 +35,14 @@
 #include <stdint.h>
 
 #include "usb.h"
+#include "usbCfg.h"
 
 #define USB_BDT_STAT_STALL       (1 << 2)
 #define USB_BDT_STAT_DTS         (1 << 3)
 #define USB_BDT_STAT_NINC        (1 << 4)
 #define USB_BDT_STAT_KEEP        (1 << 5)
 #define USB_BDT_STAT_DATA1       (1 << 6)
-#define USB_BDT_STAT_USBOWN      (1 << 7)
+#define USB_BDT_STAT_HW_OWNED    (1 << 7)
 #define USB_BDT_STAT_PID_MASK    (0x3C)
 #define USB_BDT_STAT_PID_SHIFT   (2)
 #define usbCoreBdtGetPid(x)      ((x & USB_BDT_STAT_PID_MASK) >> USB_BDT_STAT_PID_SHIFT)
@@ -61,10 +62,9 @@ typedef struct
 
 // BDT status value
 #define kMCU      (0)
-#define kSIE      (USB_BDT_STAT_USBOWN)
-
-#define kUDATA0   (USB_BDT_STAT_USBOWN | USB_BDT_STAT_DTS)
-#define kUDATA1   (USB_BDT_STAT_USBOWN | USB_BDT_STAT_DTS | USB_BDT_STAT_DATA1)
+#define kSIE      (USB_BDT_STAT_HW_OWNED)
+#define kUDATA0   (USB_BDT_STAT_HW_OWNED | USB_BDT_STAT_DTS)
+#define kUDATA1   (USB_BDT_STAT_HW_OWNED | USB_BDT_STAT_DTS | USB_BDT_STAT_DATA1)
 
 enum
 { uSETUP
@@ -95,32 +95,26 @@ enum
 , fOUT
 };
 
+// The order here is important as it corresponds to the USB_STAT register numbering
+/*//#define USB_EP_ENUMS(x) USB_EP##x##_OUT_EVEN, USB_EP##x##_OUT_ODD, \
+//                        USB_EP##x##_IN_EVEN,  USB_EP##x##_IN_ODD*/
+#define USB_EP_ENUMS(x) USB_EP##x##_OUT_ODD, USB_EP##x##_OUT_EVEN, \
+                        USB_EP##x##_IN_ODD,  USB_EP##x##_IN_EVEN
 enum
-{ bEP0OUT_ODD
-, bEP0OUT_EVEN
-, bEP0IN_ODD
-, bEP0IN_EVEN
-, bEP1OUT_ODD
-, bEP1OUT_EVEN
-, bEP1IN_ODD
-, bEP1IN_EVEN
-, bEP2OUT_ODD
-, bEP2OUT_EVEN
-, bEP2IN_ODD
-, bEP2IN_EVEN
-, bEP3OUT_ODD
-, bEP3OUT_EVEN
-, bEP3IN_ODD
-, bEP3IN_EVEN
+{ USB_EP_ENUMS(0)
+, USB_EP_ENUMS(1)
+, USB_EP_ENUMS(2)
+, USB_EP_ENUMS(3)
 };
 
 // It's used in some macros here.
-extern bdt_t bdtTable[];
+extern bdt_t bdtTable[USBCFG_BDT_ENTRY_COUNT];
+extern uint8_t epBuffers[USBCFG_BDT_ENTRY_COUNT][USBCFG_EP_BUF_SIZE];
 
 typedef uint8_t (*usbInterfaceReqHandler)(uint8_t ep, usbSetupPacket_t *pkt);
 
-extern void usbCoreInit(usbInterfaceReqHandler handler);
-extern void usbCoreEpInTransfer(uint8_t ep, uint8_t *data, uint8_t size);
+extern void usbCoreInit(usbInterfaceReqHandler reqHandler);
+extern void usbCoreEpInTransfer(uint8_t ep, uint8_t *data, uint8_t len);
 extern uint8_t  usbCoreEpOutTransfer(uint8_t ep, uint8_t *data);
 extern uint16_t usbCoreEpOutSizeCheck(uint8_t ep);
 

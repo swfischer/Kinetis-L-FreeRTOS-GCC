@@ -73,23 +73,37 @@ static inline void dbgPutChar(int c)
    UART0_D = c;
 }
 
-static inline void dbgPutWord(uint32_t w)
+static inline void dbgPutData(uint32_t d, int cnt)
 {
    static const char tohex[] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
    int i;
    char c;
    
-   for (i = 7; i >= 0; i--)
+   for (i = (cnt - 1); i >= 0; i--)
    {
       while (!(UART0_S1 & UART_S1_TDRE_MASK))
          ;
-      c = tohex[((w >> (4 * i)) & 0xf)];
+      c = tohex[((d >> (4 * i)) & 0xf)];
       UART0_D = c;
    }
 
    while (!(UART0_S1 & UART_S1_TDRE_MASK))
       ;
+   UART0_D = '\r';
+
+   while (!(UART0_S1 & UART_S1_TDRE_MASK))
+      ;
    UART0_D = '\n';
+}
+
+static inline void dbgPutByte(uint8_t b)
+{
+   dbgPutData(b, 2);
+}
+
+static inline void dbgPutWord(uint32_t w)
+{
+   dbgPutData(w, 8);
 }
 
 // ----------------------------------------------------------------------------

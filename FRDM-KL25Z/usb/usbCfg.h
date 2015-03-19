@@ -51,6 +51,7 @@ typedef struct __attribute__((packed))
 
 #define USBCFG_EP_COUNT          (4) // EP0 + 3 additional
 #define USBCFG_BDT_ENTRY_COUNT   (4 * USBCFG_EP_COUNT)
+#define USBCFG_EP_BUF_SIZE       (32) // All the same size
 
 #define USBCFG_EP0_SIZE    (32)
 #define USBCFG_EP1_SIZE    (32)

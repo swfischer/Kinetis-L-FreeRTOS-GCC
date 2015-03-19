@@ -271,4 +271,23 @@ typedef struct __attribute__((packed))
    uint8_t  bSubInterface0;
 } usbCdcUnionDesc_t;
 
+// CDC class specific setup packet request codes for the bRequest field
+#define USB_CDC_REQ_SET_LINE_CODING       (0x20)
+#define USB_CDC_REQ_GET_LINE_CODING       (0x21)
+#define USB_CDC_REQ_SET_CTRL_LINE_STATE   (0x22)
+#define USB_CDC_REQ_SEND_BREAK            (0x23)
+
+// CDC class specific setup packet wValue field codes for a SET_CTRL_LINE_STATE request
+#define USB_CDC_SCLS_DTE_PRESENT    (1 << 0)
+#define USB_CDC_SCLS_RTS_ACTIVE     (1 << 1)
+
+// CDC line coding structure - for get/set line coding requests
+typedef struct __attribute__((packed))
+{
+   uint32_t dteRate;
+   uint8_t  charFormat;
+   uint8_t  parityType;
+   uint8_t  databits;
+} usbCdcLineCoding_t;
+
 #endif // _USB_H_

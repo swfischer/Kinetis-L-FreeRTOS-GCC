@@ -34,11 +34,11 @@
 #include <stdarg.h>
 #include <stddef.h>  // for size_t
 
-#define utilsSwap16(x)  (uint16_t)( (((uint16_t)(x) >> 8) & 0xFF) \
-                                  | (((uint16_t)(x) & 0xFF) << 8) \
+#define utilsSwap16(x)  (uint16_t)( ((((uint16_t)(x)) >> 8) & 0xFF) \
+                                  | ((((uint16_t)(x)) & 0xFF) << 8) \
                                   )
-#define utilsSwap32(x)  (uint32_t)( (utilsSwap16((uint32_t)(x) & (uint32_t)0xFFFF) << 16) \
-                                  | (utilsSwap16((uint32_t)((x) >> 16))) \
+#define utilsSwap32(x)  (uint32_t)( (utilsSwap16(((uint32_t)(x)) & 0xFFFF) << 16) \
+                                  | (utilsSwap16(((uint32_t)(x)) >> 16))) \
                                   )
 
 extern void utilsHwDelay(uint32_t ms);
