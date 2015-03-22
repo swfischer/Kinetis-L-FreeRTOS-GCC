@@ -38,10 +38,6 @@
 #include "usbCdc.h"
 #include "usbCore.h"
 
-extern uint8_t gu8EP2_IN_ODD_Buffer[];
-extern uint8_t gu8EP3_OUT_ODD_Buffer[];
-
-extern uint8_t usbFlagsHack;
 extern uint8_t usbStateHack;
 
 // Not really used, but could be used to denote VBUS state changes
@@ -54,18 +50,22 @@ static bool    sDteActive = 0;
 
 static uint8_t sAltInterface = 0;  // FIXME: should be coordinated with interface descriptor
 static usbCdcLineCoding_t sLineCoding;
+static usbDataIsrHandler sAppDataIsrHandler = NULL;
 
 // Local function prototypes
-static uint8_t interfaceReqHandler(uint8_t ep, usbSetupPacket_t *pkt);
+static void cdcDataIsrHandler(uint8_t ep, uint8_t *data, uint16_t len);
+static bool interfaceReqHandler(uint8_t ep, usbSetupPacket_t *pkt);
 
 // ----------------------------------------------------------------------------
 // External Functions
 // ----------------------------------------------------------------------------
 
-void usbCdcInit(void)
+void usbCdcInit(usbDataIsrHandler dataHandler)
 {
+   sAppDataIsrHandler = dataHandler;
+
    // USB core initialization
-   usbCoreInit(interfaceReqHandler);
+   usbCoreInit(interfaceReqHandler, cdcDataIsrHandler);
 
    // Line Coding Initialization
    sLineCoding.dteRate    = 9600;
@@ -82,27 +82,19 @@ void usbCdcEngine(void)
       usbCdcIsrFlags &= ~(VBUS_HIGH_EVENT);
 
       USB0_CTL |= USB_CTL_USBENSOFEN_MASK;
-      usbCdcInit();
+      usbCdcInit(sAppDataIsrHandler);
    }
 
    if (sEventFlags)
    {
       if (sEventFlags && EVENT_SET_LINE_CODING)
       {
-         if (usbFlagsHack & (1 << EP0))
-         {
-            usbFlagsHack &= ~(1 << EP0);
-
-            usbCoreEpOutTransfer(EP0, (uint8_t*) &sLineCoding);
-            usbCoreEpInTransfer(EP0, 0, 0);
-         }
-
-         sEventFlags &= ~(EVENT_SET_LINE_CODING);
+         // Nothing to do
       }
       
       if (sEventFlags && EVENT_SET_CTRL_LINE_STATE)
       {
-         usbCoreEpInTransfer(EP0, 0, 0);
+         usbCoreEpTxTransfer(EP0, 0, 0);
          
          sEventFlags &= ~(EVENT_SET_CTRL_LINE_STATE);
       }
@@ -121,28 +113,53 @@ void usbCdcEngine(void)
 // Local Functions
 // ----------------------------------------------------------------------------
 
-static uint8_t interfaceReqHandler(uint8_t ep, usbSetupPacket_t *pkt)
+static void cdcDataIsrHandler(uint8_t ep, uint8_t *data, uint16_t len)
 {
-   uint8_t state = uSETUP;
+   if (ep == EP0)
+   {
+      if (sEventFlags && EVENT_SET_LINE_CODING && len == sizeof(sLineCoding))
+      {
+         uint8_t *p = (uint8_t*) &sLineCoding;
+         uint8_t *d = data;
+         int i = sizeof(sLineCoding);
+
+         while (i--)
+         {
+            *p++ = *d++;
+         }
+
+         usbCoreEpTxTransfer(EP0, 0, 0);
+
+         sEventFlags &= ~(EVENT_SET_LINE_CODING);
+      }
+   }
+   else if (sAppDataIsrHandler)
+   {
+      sAppDataIsrHandler(ep, data, len);
+   }
+}
+
+static bool interfaceReqHandler(uint8_t ep, usbSetupPacket_t *pkt)
+{
+   bool expectDataPkt = false;
 
    switch (pkt->bRequest)
    {
    case USB_REQ_GET_INTERFACE:
-      usbCoreEpInTransfer(ep, &sAltInterface, 1);
+      usbCoreEpTxTransfer(ep, &sAltInterface, 1);
       break;
    case USB_CDC_REQ_GET_LINE_CODING:
-      usbCoreEpInTransfer(ep, (uint8_t*)&sLineCoding, sizeof(sLineCoding)); //7);
+      usbCoreEpTxTransfer(ep, (uint8_t*)&sLineCoding, sizeof(sLineCoding));
       break;
    case USB_CDC_REQ_SET_LINE_CODING:
       sEventFlags |= EVENT_SET_LINE_CODING;
-      state = uDATA;
+      expectDataPkt = true;
       break;
    case USB_CDC_REQ_SET_CTRL_LINE_STATE:
       sDteActive = (pkt->wValue.word & USB_CDC_SCLS_DTE_PRESENT) ? true : false;
       sEventFlags |= EVENT_SET_CTRL_LINE_STATE;
-      state = uSETUP;
       break;
    }
 
-   return (state);
+   return (expectDataPkt);
 }

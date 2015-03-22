@@ -41,13 +41,10 @@ extern volatile uint8_t usbCdcIsrFlags;
 #define VBUS_LOW_EVENT     (1 << 0)
 #define VBUS_HIGH_EVENT    (1 << 1)
 
-#define CDC_INPointer   (&epBuffers[USB_EP2_IN_ODD][0])
-#define CDC_OUTPointer  (&epBuffers[USB_EP3_OUT_ODD][0])
-
 #define EP_OUT          3
 #define EP_IN           2
 
-extern void usbCdcInit(void);
+extern void usbCdcInit(usbDataIsrHandler dataHandler);
 extern void usbCdcEngine(void);
 
 #endif // _USBCDC_H_

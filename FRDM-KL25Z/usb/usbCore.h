@@ -67,11 +67,6 @@ typedef struct
 #define kUDATA1   (USB_BDT_STAT_HW_OWNED | USB_BDT_STAT_DTS | USB_BDT_STAT_DATA1)
 
 enum
-{ uSETUP
-, uDATA
-};
-
-enum
 { EP0
 , EP1
 , EP2
@@ -90,16 +85,9 @@ enum
 , uREADY
 };
 
-enum
-{ fIN
-, fOUT
-};
-
 // The order here is important as it corresponds to the USB_STAT register numbering
-/*//#define USB_EP_ENUMS(x) USB_EP##x##_OUT_EVEN, USB_EP##x##_OUT_ODD, \
-//                        USB_EP##x##_IN_EVEN,  USB_EP##x##_IN_ODD*/
-#define USB_EP_ENUMS(x) USB_EP##x##_OUT_ODD, USB_EP##x##_OUT_EVEN, \
-                        USB_EP##x##_IN_ODD,  USB_EP##x##_IN_EVEN
+#define USB_EP_ENUMS(x) USB_EP##x##_RX_ODD, USB_EP##x##_RX_EVEN, \
+                        USB_EP##x##_TX_ODD, USB_EP##x##_TX_EVEN
 enum
 { USB_EP_ENUMS(0)
 , USB_EP_ENUMS(1)
@@ -111,11 +99,10 @@ enum
 extern bdt_t bdtTable[USBCFG_BDT_ENTRY_COUNT];
 extern uint8_t epBuffers[USBCFG_BDT_ENTRY_COUNT][USBCFG_EP_BUF_SIZE];
 
-typedef uint8_t (*usbInterfaceReqHandler)(uint8_t ep, usbSetupPacket_t *pkt);
+typedef bool (*usbInterfaceReqHandler)(uint8_t ep, usbSetupPacket_t *pkt);
+typedef void (*usbDataIsrHandler)(uint8_t ep, uint8_t *data, uint16_t len);
 
-extern void usbCoreInit(usbInterfaceReqHandler reqHandler);
-extern void usbCoreEpInTransfer(uint8_t ep, uint8_t *data, uint8_t len);
-extern uint8_t  usbCoreEpOutTransfer(uint8_t ep, uint8_t *data);
-extern uint16_t usbCoreEpOutSizeCheck(uint8_t ep);
+extern void usbCoreInit(usbInterfaceReqHandler reqHandler, usbDataIsrHandler dataHandler);
+extern void usbCoreEpTxTransfer(uint8_t ep, uint8_t *data, uint8_t len);
 
 #endif // _USBCORE_H_

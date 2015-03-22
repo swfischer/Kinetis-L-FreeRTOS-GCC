@@ -35,8 +35,7 @@
 #include "usbCore.h"
 #include "usbTask.h"
 
-extern uint8_t usbFlagsHack; 
-extern uint8_t gu8EP3_OUT_ODD_Buffer[];
+static void taskDataIsrHandler(uint8_t ep, uint8_t *data, uint16_t len);
 
 // ----------------------------------------------------------------------------
 // External Functions
@@ -44,29 +43,13 @@ extern uint8_t gu8EP3_OUT_ODD_Buffer[];
 
 void usbTaskEntry(void *pParameters)
 {
-   uint16_t x;
-
    osDelay(5000); // this is a bit of a hack just to allow for console debugging
 
-   usbCdcInit();
+   usbCdcInit(taskDataIsrHandler);
 
    while (1)
    {
       usbCdcEngine();
-
-      // If data transfer arrives
-      if (usbFlagsHack & (1 << EP_OUT))
-      {
-         x = usbCoreEpOutSizeCheck(EP_OUT);
-
-         usbEP_Reset(EP_OUT);
-         usbSIE_CONTROL(EP_OUT);
-
-         usbFlagsHack &= ~(1 << EP_OUT);
-
-         // Send it back to the PC
-         usbCoreEpInTransfer(EP2, CDC_OUTPointer, x);
-      }
 
       osDelay(100);
    }
@@ -75,3 +58,15 @@ void usbTaskEntry(void *pParameters)
 // ----------------------------------------------------------------------------
 // Local Functions
 // ----------------------------------------------------------------------------
+
+static void taskDataIsrHandler(uint8_t ep, uint8_t *data, uint16_t len)
+{
+   if (ep == EP_OUT)
+   {
+      usbEP_Reset(EP_OUT);
+      usbSIE_CONTROL(EP_OUT);
+
+      // Send it back to the PC
+      usbCoreEpTxTransfer(EP_IN, data, len);
+   }
+}
