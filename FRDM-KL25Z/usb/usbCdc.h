@@ -36,9 +36,6 @@
 
 #include "usbDev.h"
 
-#define EP_OUT          3
-#define EP_IN           2
-
 extern void usbCdcInit(usbCtrlIsrHandler ctrlHandler, usbDataIsrHandler dataHandler);
 extern void usbCdcEngine(void);
 

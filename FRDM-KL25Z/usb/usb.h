@@ -32,6 +32,13 @@
 
 #include <stdint.h>
 
+enum
+{ EP0,  EP1,  EP2,  EP3
+, EP4,  EP5,  EP6,  EP7
+, EP8,  EP9,  EP10, EP11
+, EP12, EP13, EP14, EP15
+};
+
 // Values for PID tokens
 #define USB_PID_TOKEN_OUT     (0x1)
 #define USB_PID_TOKEN_SOF     (0x5)

@@ -58,6 +58,9 @@ typedef struct __attribute__((packed))
 #define USBCFG_EP2_SIZE    (32)
 #define USBCFG_EP3_SIZE    (32)
 
+#define EP_DATA_TX   (EP2)
+#define EP_DATA_RX   (EP3)
+
 extern const usbDeviceDesc_t usbCfgDevDesc;
 extern const usbCfg_t usbCfg;
 extern const uint8_t* usbCfgStringTable[];

@@ -52,7 +52,7 @@ static void taskDataIsrHandler(uint8_t ep, uint8_t *data, uint16_t len);
 
 void usbTaskEntry(void *pParameters)
 {
-   osDelay(5000); // this is a bit of a hack just to allow for console debugging
+//   osDelay(5000); // this is a bit of a hack just to allow for console debugging
 
    sEvents = osSignalGroupCreate();
    usbCdcInit(taskCtrlIsrHandler, taskDataIsrHandler);
@@ -96,12 +96,12 @@ static void taskCtrlIsrHandler(int event)
 
 static void taskDataIsrHandler(uint8_t ep, uint8_t *data, uint16_t len)
 {
-   if (ep == EP_OUT)
+   if (ep == EP_DATA_RX)
    {
-      usbEP_Reset(EP_OUT);
-      usbSIE_CONTROL(EP_OUT);
+      usbDevEpReset(EP_DATA_RX);
+      usbDevEpControl(EP_DATA_RX, USB_CTRL_SIE);
 
       // Send it back to the PC
-      usbDevEpTxTransfer(EP_IN, data, len);
+      usbDevEpTxTransfer(EP_DATA_TX, data, len);
    }
 }

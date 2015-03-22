@@ -40,8 +40,33 @@
 #include "usbDev.h"
 #include "utils.h"
 
-bdt_t bdtTable[USBCFG_BDT_ENTRY_COUNT] __attribute__((__aligned__(512)));
-uint8_t epBuffers[USBCFG_BDT_ENTRY_COUNT][USBCFG_EP_BUF_SIZE] __attribute__((__aligned__(4)));
+#define SIE_DATA0 (USB_BDT_STAT_HW_OWNED | USB_BDT_STAT_DTS)
+#define SIE_DATA1 (USB_BDT_STAT_HW_OWNED | USB_BDT_STAT_DTS | USB_BDT_STAT_DATA1)
+
+// The order here is important as it corresponds to the USB_STAT register numbering
+#define USB_EP_ENUMS(x) USB_EP##x##_RX_ODD, USB_EP##x##_RX_EVEN, \
+                        USB_EP##x##_TX_ODD, USB_EP##x##_TX_EVEN
+enum
+{ USB_EP_ENUMS(0)
+, USB_EP_ENUMS(1)
+, USB_EP_ENUMS(2)
+, USB_EP_ENUMS(3)
+, USB_EP_ENUMS(4)
+, USB_EP_ENUMS(5)
+, USB_EP_ENUMS(6)
+, USB_EP_ENUMS(7)
+, USB_EP_ENUMS(8)
+, USB_EP_ENUMS(9)
+, USB_EP_ENUMS(10)
+, USB_EP_ENUMS(11)
+, USB_EP_ENUMS(12)
+, USB_EP_ENUMS(13)
+, USB_EP_ENUMS(14)
+, USB_EP_ENUMS(15)
+};
+
+static bdt_t   sBdtTable[USBCFG_BDT_ENTRY_COUNT] __attribute__((__aligned__(512)));
+static uint8_t sEpBuffers[USBCFG_BDT_ENTRY_COUNT][USBCFG_EP_BUF_SIZE] __attribute__((__aligned__(4)));
 
 static uint8_t *sTxData;
 static uint8_t  sTxDataCnt;
@@ -55,6 +80,7 @@ static usbCtrlIsrHandler sCtrlIsrHandler = NULL;
 static usbDataIsrHandler sDataIsrHandler = NULL;
 static usbInterfaceReqHandler sInterfaceReqHandler = NULL;
 
+// Local function prototypes
 static void ep0TxHandler(void);
 static void ep0RxHandler(void);
 static void ep0Stall(void);
@@ -80,7 +106,7 @@ void usbDevInit( usbCtrlIsrHandler ctrlHandler
    sDataIsrHandler = dataHandler;
    sInterfaceReqHandler = reqHandler;
 
-   sSetupPkt = (usbSetupPacket_t*) &epBuffers[USB_EP0_RX_ODD][0];
+   sSetupPkt = (usbSetupPacket_t*) &sEpBuffers[USB_EP0_RX_ODD][0];
 
    clkEnable(CLK_USBOTG);
    irqRegister(INT_USB0, isrHandler, 0);
@@ -92,9 +118,9 @@ void usbDevInit( usbCtrlIsrHandler ctrlHandler
       ;
 
    // Set BDT Base Register
-   USB0_BDTPAGE1 = (uint8_t)((uint32_t) bdtTable >>  8);
-   USB0_BDTPAGE2 = (uint8_t)((uint32_t) bdtTable >> 16);
-   USB0_BDTPAGE3 = (uint8_t)((uint32_t) bdtTable >> 24);
+   USB0_BDTPAGE1 = (uint8_t)((uint32_t) sBdtTable >>  8);
+   USB0_BDTPAGE2 = (uint8_t)((uint32_t) sBdtTable >> 16);
+   USB0_BDTPAGE3 = (uint8_t)((uint32_t) sBdtTable >> 24);
 
    // Clear USB Reset flag
    USB0_ISTAT = USB_ISTAT_USBRST_MASK;
@@ -111,6 +137,16 @@ void usbDevInit( usbCtrlIsrHandler ctrlHandler
 
    // Pull up enable
    USB0_CONTROL |= USB_CONTROL_DPPULLUPNONOTG_MASK;
+}
+
+void usbDevEpControl(uint8_t ep, uint8_t who)
+{
+   sBdtTable[ep << 2].stat = who;
+}
+
+void usbDevEpReset(uint8_t ep)
+{
+   sBdtTable[ep << 2].cnt = USBCFG_EP_BUF_SIZE;
 }
 
 void usbDevEpTxTransfer(uint8_t ep, uint8_t *data, uint8_t length)
@@ -141,8 +177,8 @@ void usbDevEpTxTransfer(uint8_t ep, uint8_t *data, uint8_t length)
    }
 
    // Copy User buffer to EP buffer
-   bdtTable[epIdx].cnt = bytes;
-   buffer = &epBuffers[epIdx][0];
+   sBdtTable[epIdx].cnt = bytes;
+   buffer = &sEpBuffers[epIdx][0];
    while (bytes--)
    {
       *buffer++ = *sTxData++;
@@ -151,12 +187,12 @@ void usbDevEpTxTransfer(uint8_t ep, uint8_t *data, uint8_t length)
    // USB Flags Handling
    if (sTxDataFlags & (1 << ep))
    {
-      bdtTable[epIdx].stat = kUDATA0;
+      sBdtTable[epIdx].stat = SIE_DATA0;
       sTxDataFlags &= ~(1 << ep);
    }
    else
    {
-      bdtTable[epIdx].stat = kUDATA1;
+      sBdtTable[epIdx].stat = SIE_DATA1;
       sTxDataFlags |= (1 << ep);
    }
 }
@@ -176,17 +212,17 @@ static void ep0TxHandler(void)
 
 static void ep0RxHandler(void)
 {
-   sDataIsrHandler(EP0, (uint8_t*) bdtTable[sTokenBdtIdx].addr, bdtTable[sTokenBdtIdx].cnt);
+   sDataIsrHandler(EP0, (uint8_t*) sBdtTable[sTokenBdtIdx].addr, sBdtTable[sTokenBdtIdx].cnt);
 
-   bdtTable[USB_EP0_RX_ODD].stat = kUDATA0;
+   sBdtTable[USB_EP0_RX_ODD].stat = SIE_DATA0;
 }
 
 static void ep0Stall(void)
 {
    USB0_ENDPT0 |= USB_ENDPT_EPSTALL_MASK;
 
-   bdtTable[USB_EP0_RX_ODD].stat = kUDATA0;
-   bdtTable[USB_EP0_RX_ODD].cnt = USBCFG_EP0_SIZE;
+   sBdtTable[USB_EP0_RX_ODD].stat = SIE_DATA0;
+   sBdtTable[USB_EP0_RX_ODD].cnt = USBCFG_EP0_SIZE;
 }
 
 static void epSetupHandler(usbSetupPacket_t *pkt)
@@ -333,21 +369,21 @@ static void resetHandler(void)
 
    // EP0 BDT Setup
    // EP0 OUT BDT Settings
-   bdtTable[USB_EP0_RX_ODD].cnt = USBCFG_EP0_SIZE;
-   bdtTable[USB_EP0_RX_ODD].addr = (uint32_t) &epBuffers[USB_EP0_RX_ODD][0];
-   bdtTable[USB_EP0_RX_ODD].stat = kUDATA1;
+   sBdtTable[USB_EP0_RX_ODD].cnt = USBCFG_EP0_SIZE;
+   sBdtTable[USB_EP0_RX_ODD].addr = (uint32_t) &sEpBuffers[USB_EP0_RX_ODD][0];
+   sBdtTable[USB_EP0_RX_ODD].stat = SIE_DATA1;
    // EP0 OUT BDT Settings
-   bdtTable[USB_EP0_RX_EVEN].cnt = USBCFG_EP0_SIZE;
-   bdtTable[USB_EP0_RX_EVEN].addr = (uint32_t) &epBuffers[USB_EP0_RX_EVEN][0];
-   bdtTable[USB_EP0_RX_EVEN].stat = kUDATA1;
+   sBdtTable[USB_EP0_RX_EVEN].cnt = USBCFG_EP0_SIZE;
+   sBdtTable[USB_EP0_RX_EVEN].addr = (uint32_t) &sEpBuffers[USB_EP0_RX_EVEN][0];
+   sBdtTable[USB_EP0_RX_EVEN].stat = SIE_DATA1;
    // EP0 IN BDT Settings
-   bdtTable[USB_EP0_TX_ODD].cnt = USBCFG_EP0_SIZE;
-   bdtTable[USB_EP0_TX_ODD].addr = (uint32_t) &epBuffers[USB_EP0_TX_ODD][0];
-   bdtTable[USB_EP0_TX_ODD].stat = kUDATA0;
+   sBdtTable[USB_EP0_TX_ODD].cnt = USBCFG_EP0_SIZE;
+   sBdtTable[USB_EP0_TX_ODD].addr = (uint32_t) &sEpBuffers[USB_EP0_TX_ODD][0];
+   sBdtTable[USB_EP0_TX_ODD].stat = SIE_DATA0;
    // EP0 IN BDT Settings
-   bdtTable[USB_EP0_TX_EVEN].cnt = USBCFG_EP0_SIZE;
-   bdtTable[USB_EP0_TX_EVEN].addr = (uint32_t) &epBuffers[USB_EP0_TX_EVEN][0];
-   bdtTable[USB_EP0_TX_EVEN].stat = kUDATA0;
+   sBdtTable[USB_EP0_TX_EVEN].cnt = USBCFG_EP0_SIZE;
+   sBdtTable[USB_EP0_TX_EVEN].addr = (uint32_t) &sEpBuffers[USB_EP0_TX_EVEN][0];
+   sBdtTable[USB_EP0_TX_EVEN].stat = SIE_DATA0;
 
    // Enable EP0
    USB0_ENDPT0 = 0x0D;
@@ -391,17 +427,17 @@ static void setInterface(void)
    }
 
    // EndPoint 1 BDT Settings
-   bdtTable[USB_EP1_TX_ODD].stat = kMCU;
-   bdtTable[USB_EP1_TX_ODD].cnt = 0x00;
-   bdtTable[USB_EP1_TX_ODD].addr = (uint32_t) &epBuffers[USB_EP1_TX_ODD][0];
+   sBdtTable[USB_EP1_TX_ODD].stat = USB_CTRL_MCU;
+   sBdtTable[USB_EP1_TX_ODD].cnt = 0x00;
+   sBdtTable[USB_EP1_TX_ODD].addr = (uint32_t) &sEpBuffers[USB_EP1_TX_ODD][0];
    // EndPoint 2 BDT Settings
-   bdtTable[USB_EP2_TX_ODD].stat = kMCU;
-   bdtTable[USB_EP2_TX_ODD].cnt = 0x00;
-   bdtTable[USB_EP2_TX_ODD].addr = (uint32_t) &epBuffers[USB_EP2_TX_ODD][0];
+   sBdtTable[USB_EP2_TX_ODD].stat = USB_CTRL_MCU;
+   sBdtTable[USB_EP2_TX_ODD].cnt = 0x00;
+   sBdtTable[USB_EP2_TX_ODD].addr = (uint32_t) &sEpBuffers[USB_EP2_TX_ODD][0];
    // EndPoint 3 BDT Settings
-   bdtTable[USB_EP3_RX_ODD].stat = kSIE;
-   bdtTable[USB_EP3_RX_ODD].cnt = 0xFF;
-   bdtTable[USB_EP3_RX_ODD].addr = (uint32_t) &epBuffers[USB_EP3_RX_ODD][0];
+   sBdtTable[USB_EP3_RX_ODD].stat = USB_CTRL_SIE;
+   sBdtTable[USB_EP3_RX_ODD].cnt = 0xFF;
+   sBdtTable[USB_EP3_RX_ODD].addr = (uint32_t) &sEpBuffers[USB_EP3_RX_ODD][0];
 }
 
 static void setupHandler(usbSetupPacket_t *pkt)
@@ -429,7 +465,7 @@ static void setupHandler(usbSetupPacket_t *pkt)
       break;
    }
 
-   bdtTable[sTokenBdtIdx].stat = (expectDataPkt) ? kUDATA1 : kUDATA0;
+   sBdtTable[sTokenBdtIdx].stat = (expectDataPkt) ? SIE_DATA1 : SIE_DATA0;
 
    // Remove the HW suspend due to a setup packet
    USB0_CTL &= ~(USB_CTL_TXSUSPENDTOKENBUSY_MASK);
@@ -506,9 +542,8 @@ static void tokenHandler(void)
    {
       if (!in)
       {
-         usbMCU_CONTROL(ep);
-
-         sDataIsrHandler(ep, (uint8_t*) bdtTable[sTokenBdtIdx].addr, bdtTable[sTokenBdtIdx].cnt);
+         usbDevEpControl(ep, USB_CTRL_MCU);
+         sDataIsrHandler(ep, (uint8_t*) sBdtTable[sTokenBdtIdx].addr, sBdtTable[sTokenBdtIdx].cnt);
       }
    }
    // Control EndPoint
@@ -520,9 +555,9 @@ static void tokenHandler(void)
       }
       else
       {
-         if (usbCoreBdtGetPid(bdtTable[sTokenBdtIdx].stat) == USB_PID_TOKEN_SETUP)
+         if (usbCoreBdtGetPid(sBdtTable[sTokenBdtIdx].stat) == USB_PID_TOKEN_SETUP)
          {
-            setupHandler((usbSetupPacket_t*) bdtTable[sTokenBdtIdx].addr);
+            setupHandler((usbSetupPacket_t*) sBdtTable[sTokenBdtIdx].addr);
          }
          else
          {

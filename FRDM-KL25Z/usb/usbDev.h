@@ -55,38 +55,7 @@ typedef struct
    uint32_t addr;
 } bdt_t;
 
-// Macros
-#define usbSIE_CONTROL(EP)   (bdtTable[EP << 2].stat = kSIE)
-#define usbMCU_CONTROL(EP)   (bdtTable[EP << 2].stat = kMCU)
-#define usbEP_Reset(EP)      (bdtTable[EP << 2].cnt = 0x0020)
-
-// BDT status value
-#define kMCU      (0)
-#define kSIE      (USB_BDT_STAT_HW_OWNED)
-#define kUDATA0   (USB_BDT_STAT_HW_OWNED | USB_BDT_STAT_DTS)
-#define kUDATA1   (USB_BDT_STAT_HW_OWNED | USB_BDT_STAT_DTS | USB_BDT_STAT_DATA1)
-
-enum
-{ EP0
-, EP1
-, EP2
-, EP3
-};
-
-// The order here is important as it corresponds to the USB_STAT register numbering
-#define USB_EP_ENUMS(x) USB_EP##x##_RX_ODD, USB_EP##x##_RX_EVEN, \
-                        USB_EP##x##_TX_ODD, USB_EP##x##_TX_EVEN
-enum
-{ USB_EP_ENUMS(0)
-, USB_EP_ENUMS(1)
-, USB_EP_ENUMS(2)
-, USB_EP_ENUMS(3)
-};
-
-// It's used in some macros here.
-extern bdt_t bdtTable[USBCFG_BDT_ENTRY_COUNT];
-extern uint8_t epBuffers[USBCFG_BDT_ENTRY_COUNT][USBCFG_EP_BUF_SIZE];
-
+// Values for the "event" parameter of the "usbCtrlIsrHandler" calls
 #define USB_CTRL_EVENT_RESET        (1)  // Reset occurred
 #define USB_CTRL_EVENT_ENUMERATION  (2)  // Enumeration occurred
 #define USB_CTRL_EVENT_REQUEST      (3)  // Request for CDC processing
@@ -99,6 +68,13 @@ extern void usbDevInit( usbCtrlIsrHandler ctrlHandler
                       , usbDataIsrHandler dataHandler
                       , usbInterfaceReqHandler reqHandler
                       );
+
+// Values for the "who" parameter of the "usbDevEpControl" function
+#define USB_CTRL_MCU    (0)
+#define USB_CTRL_SIE    (USB_BDT_STAT_HW_OWNED)
+
+extern void usbDevEpControl(uint8_t ep, uint8_t who);
+extern void usbDevEpReset(uint8_t ep);
 extern void usbDevEpTxTransfer(uint8_t ep, uint8_t *data, uint8_t len);
 
 #endif // _USBCORE_H_
