@@ -68,6 +68,7 @@ enum
 static bdt_t   sBdtTable[USBCFG_BDT_ENTRY_COUNT] __attribute__((__aligned__(512)));
 static uint8_t sEpBuffers[USBCFG_BDT_ENTRY_COUNT][USBCFG_EP_BUF_SIZE] __attribute__((__aligned__(4)));
 
+static bool     sTxInProgress;
 static uint8_t *sTxData;
 static uint8_t  sTxDataCnt;
 static uint8_t  sTxDataFlags;
@@ -82,7 +83,6 @@ static usbInterfaceReqHandler sInterfaceReqHandler = NULL;
 
 // Local function prototypes
 static void ep0TxHandler(void);
-static void ep0RxHandler(void);
 static void ep0Stall(void);
 static void epSetupHandler(usbSetupPacket_t *pkt);
 static void errorHandler(void);
@@ -92,6 +92,8 @@ static void setInterface(void);
 static void setupHandler(usbSetupPacket_t *pkt);
 static void standardReqHandler(usbSetupPacket_t *pkt);
 static void tokenHandler(void);
+static void tokenRxHandler(uint8_t ep);
+static void tokenTxHandler(uint8_t ep);
 
 // ----------------------------------------------------------------------------
 // External Functions
@@ -162,6 +164,7 @@ void usbDevEpTxTransfer(uint8_t ep, uint8_t *data, uint8_t length)
    {
       sTxData = data;
       sTxDataCnt = length;
+      sTxInProgress = true;
    }
 
    // Check transfer Size
@@ -203,18 +206,14 @@ void usbDevEpTxTransfer(uint8_t ep, uint8_t *data, uint8_t length)
 
 static void ep0TxHandler(void)
 {
+   // Handle setting the address as it appears to not work directly when the
+   // address is received.
    if (USB0_ADDR == 0 && sUsbAddr != 0)
    {
       USB0_ADDR = sUsbAddr;
    }
-   usbDevEpTxTransfer(0, 0, 0);
-}
 
-static void ep0RxHandler(void)
-{
-   sDataIsrHandler(EP0, (uint8_t*) sBdtTable[sTokenBdtIdx].addr, sBdtTable[sTokenBdtIdx].cnt);
-
-   sBdtTable[USB_EP0_RX_ODD].stat = SIE_DATA0;
+   usbDevEpTxTransfer(EP0, 0, 0);
 }
 
 static void ep0Stall(void)
@@ -358,6 +357,7 @@ static void resetHandler(void)
 {
    // Software Flags
    sTxDataFlags = 0;
+   sTxInProgress = false;
 
    // Disable all data EP registers
    USB0_ENDPT1 = 0;
@@ -531,38 +531,65 @@ static void tokenHandler(void)
 {
    uint8_t stat = USB0_STAT;
    uint8_t ep;
-   uint8_t in;
 
    sTokenBdtIdx = stat >> 2;
-   in = stat & USB_STAT_TX_MASK;
    ep = stat >> USB_STAT_ENDP_SHIFT;
 
-   // Data EndPoints
+   switch (usbCoreBdtGetPid(sBdtTable[sTokenBdtIdx].stat))
+   {
+   case USB_PID_TOKEN_SETUP:
+      setupHandler((usbSetupPacket_t*) sBdtTable[sTokenBdtIdx].addr);
+      break;
+   case USB_PID_TOKEN_IN: // Tx
+      tokenTxHandler(ep);
+      break;
+   case USB_PID_TOKEN_OUT: // Rx
+      tokenRxHandler(ep);
+      break;
+   }
+}
+
+static void tokenRxHandler(uint8_t ep)
+{
    if (ep)
    {
-      if (!in)
+      usbDevEpControl(ep, USB_CTRL_MCU);
+      sDataIsrHandler( ep
+                     , (uint8_t*) sBdtTable[sTokenBdtIdx].addr
+                     , sBdtTable[sTokenBdtIdx].cnt
+                     );
+   }
+   else // EP0
+   {
+      sDataIsrHandler( ep
+                     , (uint8_t*) sBdtTable[sTokenBdtIdx].addr
+                     , sBdtTable[sTokenBdtIdx].cnt
+                     );
+      sBdtTable[USB_EP0_RX_ODD].stat = SIE_DATA0;
+   }
+}
+
+static void tokenTxHandler(uint8_t ep)
+{
+   if (ep)
+   {
+      // If Tx data is still pending send it
+      if (sTxDataCnt)
       {
-         usbDevEpControl(ep, USB_CTRL_MCU);
-         sDataIsrHandler(ep, (uint8_t*) sBdtTable[sTokenBdtIdx].addr, sBdtTable[sTokenBdtIdx].cnt);
+         usbDevEpTxTransfer(ep, 0, 0);
+      }
+      // When done, report it
+      else if (sTxInProgress)
+      {
+         sTxInProgress = false;
+         if (sCtrlIsrHandler)
+         {
+            sCtrlIsrHandler(USB_CTRL_EVENT_TX_DONE);
+         }
       }
    }
-   // Control EndPoint
-   else
+   else // EP0
    {
-      if (in)
-      {
-         ep0TxHandler();
-      }
-      else
-      {
-         if (usbCoreBdtGetPid(sBdtTable[sTokenBdtIdx].stat) == USB_PID_TOKEN_SETUP)
-         {
-            setupHandler((usbSetupPacket_t*) sBdtTable[sTokenBdtIdx].addr);
-         }
-         else
-         {
-            ep0RxHandler();
-         }
-      }
+      ep0TxHandler();
    }
 }

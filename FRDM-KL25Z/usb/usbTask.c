@@ -91,6 +91,8 @@ static void taskCtrlIsrHandler(int event)
    case USB_CTRL_EVENT_REQUEST:
       osSignalSet(sEvents, USB_CDC_PROCESS_BIT);
       break;
+   case USB_CTRL_EVENT_TX_DONE:
+      break;
    };
 }
 

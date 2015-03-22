@@ -59,6 +59,7 @@ typedef struct
 #define USB_CTRL_EVENT_RESET        (1)  // Reset occurred
 #define USB_CTRL_EVENT_ENUMERATION  (2)  // Enumeration occurred
 #define USB_CTRL_EVENT_REQUEST      (3)  // Request for CDC processing
+#define USB_CTRL_EVENT_TX_DONE      (4)  // Last Tx Complete
 
 typedef void (*usbCtrlIsrHandler)(int event);
 typedef void (*usbDataIsrHandler)(uint8_t ep, uint8_t *data, uint16_t len);
