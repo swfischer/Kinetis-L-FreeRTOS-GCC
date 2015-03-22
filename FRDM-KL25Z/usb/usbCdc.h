@@ -36,15 +36,10 @@
 
 #include "usbCore.h"
 
-// Re-enumeration macros and flag
-extern volatile uint8_t usbCdcIsrFlags;
-#define VBUS_LOW_EVENT     (1 << 0)
-#define VBUS_HIGH_EVENT    (1 << 1)
-
 #define EP_OUT          3
 #define EP_IN           2
 
-extern void usbCdcInit(usbDataIsrHandler dataHandler);
+extern void usbCdcInit(usbCtrlIsrHandler ctrlHandler, usbDataIsrHandler dataHandler);
 extern void usbCdcEngine(void);
 
 #endif // _USBCDC_H_

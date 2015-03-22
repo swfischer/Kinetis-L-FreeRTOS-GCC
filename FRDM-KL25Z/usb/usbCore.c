@@ -45,17 +45,17 @@
 bdt_t bdtTable[USBCFG_BDT_ENTRY_COUNT] __attribute__((__aligned__(512)));
 uint8_t epBuffers[USBCFG_BDT_ENTRY_COUNT][USBCFG_EP_BUF_SIZE] __attribute__((__aligned__(4)));
 
-uint8_t usbStateHack;
-
 static uint8_t *sTxData;
 static uint8_t  sTxDataCnt;
 static uint8_t  sTxDataFlags;
 
-static uint8_t sUsbAddr;
 static uint8_t sTokenBdtIdx;
+static uint8_t sUsbAddr;
 static usbSetupPacket_t *sSetupPkt;
-static usbInterfaceReqHandler sInterfaceReqHandler = NULL;
+
+static usbCtrlIsrHandler sCtrlIsrHandler = NULL;
 static usbDataIsrHandler sDataIsrHandler = NULL;
+static usbInterfaceReqHandler sInterfaceReqHandler = NULL;
 
 static void ep0TxHandler(void);
 static void ep0RxHandler(void);
@@ -73,23 +73,20 @@ static void tokenHandler(void);
 // External Functions
 // ----------------------------------------------------------------------------
 
-void usbCoreInit(usbInterfaceReqHandler reqHandler, usbDataIsrHandler dataHandler)
+void usbCoreInit( usbCtrlIsrHandler ctrlHandler
+                , usbDataIsrHandler dataHandler
+                , usbInterfaceReqHandler reqHandler
+                )
 {
-   sInterfaceReqHandler = reqHandler;
+   sCtrlIsrHandler = ctrlHandler;
    sDataIsrHandler = dataHandler;
-
-   // Software Configuration
+   sInterfaceReqHandler = reqHandler;
 
    sSetupPkt = (usbSetupPacket_t*) &epBuffers[USB_EP0_RX_ODD][0];
-   usbStateHack = uPOWER;
-
-   // MPU Configuration
 
    clkEnable(CLK_USBOTG);
    irqRegister(INT_USB0, isrHandler, 0);
    irqEnable(INT_USB0);
-
-   // USB Module Configuration
 
    // Reset USB Module
    USB0_USBTRC0 |= USB_USBTRC0_USBRESET_MASK;
@@ -172,10 +169,9 @@ void usbCoreEpTxTransfer(uint8_t ep, uint8_t *data, uint8_t length)
 
 static void ep0TxHandler(void)
 {
-   if (usbStateHack == uADDRESS)
+   if (USB0_ADDR == 0 && sUsbAddr != 0)
    {
       USB0_ADDR = sUsbAddr;
-      usbStateHack = uREADY;
    }
    usbCoreEpTxTransfer(0, 0, 0);
 }
@@ -361,11 +357,12 @@ static void resetHandler(void)
    // Clear all Error flags
    USB0_ERRSTAT = 0xFF;
 
-   // CLear all USB ISR flags
+   // Clear all USB ISR flags
    USB0_ISTAT = 0xFF;
 
    // Set default Address
    USB0_ADDR = 0x00;
+   sUsbAddr = 0;
 
    // Enable all error sources
    USB0_ERREN = 0xFF;
@@ -374,6 +371,11 @@ static void resetHandler(void)
    USB0_INTEN |= ( USB_INTEN_TOKDNEEN_MASK | USB_INTEN_SOFTOKEN_MASK
                  | USB_INTEN_ERROREN_MASK | USB_INTEN_USBRSTEN_MASK
                  );
+
+   if (sCtrlIsrHandler)
+   {
+      sCtrlIsrHandler(USB_CTRL_EVENT_RESET);
+   }
 }
 
 static void setInterface(void)
@@ -445,7 +447,6 @@ static void standardReqHandler(usbSetupPacket_t *pkt)
    case USB_REQ_SET_ADDRESS:
       usbCoreEpTxTransfer(EP0, 0, 0);
       sUsbAddr = pkt->wValue.bytes.lo;
-      usbStateHack = uADDRESS;
       break;
    case USB_REQ_GET_DESC:
       switch (pkt->wValue.bytes.hi)
@@ -473,7 +474,10 @@ static void standardReqHandler(usbSetupPacket_t *pkt)
       {
          setInterface();
          usbCoreEpTxTransfer(EP0, 0, 0);
-         usbStateHack = uENUMERATED;
+         if (sCtrlIsrHandler)
+         {
+            sCtrlIsrHandler(USB_CTRL_EVENT_ENUMERATION);
+         }
       }
       break;
    case USB_REQ_GET_CONFIG:

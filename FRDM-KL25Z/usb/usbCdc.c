@@ -38,8 +38,6 @@
 #include "usbCdc.h"
 #include "usbCore.h"
 
-extern uint8_t usbStateHack;
-
 // Not really used, but could be used to denote VBUS state changes
 volatile uint8_t usbCdcIsrFlags = 0;
 
@@ -50,6 +48,8 @@ static bool    sDteActive = 0;
 
 static uint8_t sAltInterface = 0;  // FIXME: should be coordinated with interface descriptor
 static usbCdcLineCoding_t sLineCoding;
+
+static usbCtrlIsrHandler sAppCtrlIsrHandler = NULL;
 static usbDataIsrHandler sAppDataIsrHandler = NULL;
 
 // Local function prototypes
@@ -60,12 +60,13 @@ static bool interfaceReqHandler(uint8_t ep, usbSetupPacket_t *pkt);
 // External Functions
 // ----------------------------------------------------------------------------
 
-void usbCdcInit(usbDataIsrHandler dataHandler)
+void usbCdcInit(usbCtrlIsrHandler ctrlHandler, usbDataIsrHandler dataHandler)
 {
+   sAppCtrlIsrHandler = ctrlHandler;
    sAppDataIsrHandler = dataHandler;
 
    // USB core initialization
-   usbCoreInit(interfaceReqHandler, cdcDataIsrHandler);
+   usbCoreInit(ctrlHandler, cdcDataIsrHandler, interfaceReqHandler);
 
    // Line Coding Initialization
    sLineCoding.dteRate    = 9600;
@@ -76,15 +77,6 @@ void usbCdcInit(usbDataIsrHandler dataHandler)
 
 void usbCdcEngine(void)
 {
-   // Re-init CDC class if a VBUS HIGH event was detected
-   if (usbCdcIsrFlags & VBUS_HIGH_EVENT)
-   {
-      usbCdcIsrFlags &= ~(VBUS_HIGH_EVENT);
-
-      USB0_CTL |= USB_CTL_USBENSOFEN_MASK;
-      usbCdcInit(sAppDataIsrHandler);
-   }
-
    if (sEventFlags)
    {
       if (sEventFlags && EVENT_SET_LINE_CODING)
@@ -98,14 +90,6 @@ void usbCdcEngine(void)
          
          sEventFlags &= ~(EVENT_SET_CTRL_LINE_STATE);
       }
-   }
-   else
-   {
-      // Wait for USB Enumeration
-      while (usbStateHack != uENUMERATED)
-      {
-         osDelay(500); // slow things down to allow other tasks to run
-      };
    }
 }
 
@@ -159,6 +143,11 @@ static bool interfaceReqHandler(uint8_t ep, usbSetupPacket_t *pkt)
       sDteActive = (pkt->wValue.word & USB_CDC_SCLS_DTE_PRESENT) ? true : false;
       sEventFlags |= EVENT_SET_CTRL_LINE_STATE;
       break;
+   }
+
+   if (sAppCtrlIsrHandler)
+   {
+      sAppCtrlIsrHandler(USB_CTRL_EVENT_REQUEST);
    }
 
    return (expectDataPkt);

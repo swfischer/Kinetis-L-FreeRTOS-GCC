@@ -35,6 +35,15 @@
 #include "usbCore.h"
 #include "usbTask.h"
 
+// Event Group Bits:
+#define USB_STATE_CHANGE_BIT  (1 << 0)
+#define USB_RX_DATA_BIT       (1 << 1)
+#define USB_CDC_PROCESS_BIT   (1 << 2)
+static osSignalId sEvents;
+
+static bool sEnumerated = false;
+
+static void taskCtrlIsrHandler(int event);
 static void taskDataIsrHandler(uint8_t ep, uint8_t *data, uint16_t len);
 
 // ----------------------------------------------------------------------------
@@ -45,19 +54,45 @@ void usbTaskEntry(void *pParameters)
 {
    osDelay(5000); // this is a bit of a hack just to allow for console debugging
 
-   usbCdcInit(taskDataIsrHandler);
+   sEvents = osSignalGroupCreate();
+   usbCdcInit(taskCtrlIsrHandler, taskDataIsrHandler);
 
    while (1)
    {
-      usbCdcEngine();
+      if (!sEnumerated)
+      {
+         osSignalWait(sEvents, USB_STATE_CHANGE_BIT, WAIT_FOREVER, true);
+      }
+      else
+      {
+         usbCdcEngine();
 
-      osDelay(100);
+         osSignalWait(sEvents, USB_STATE_CHANGE_BIT | USB_CDC_PROCESS_BIT, WAIT_FOREVER, true);
+      }
    }
 }
 
 // ----------------------------------------------------------------------------
 // Local Functions
 // ----------------------------------------------------------------------------
+
+static void taskCtrlIsrHandler(int event)
+{
+   switch (event)
+   {
+   case USB_CTRL_EVENT_RESET:
+      sEnumerated = false;
+      osSignalSet(sEvents, USB_STATE_CHANGE_BIT);
+      break;
+   case USB_CTRL_EVENT_ENUMERATION:
+      sEnumerated = true;
+      osSignalSet(sEvents, USB_STATE_CHANGE_BIT);
+      break;
+   case USB_CTRL_EVENT_REQUEST:
+      osSignalSet(sEvents, USB_CDC_PROCESS_BIT);
+      break;
+   };
+}
 
 static void taskDataIsrHandler(uint8_t ep, uint8_t *data, uint16_t len)
 {

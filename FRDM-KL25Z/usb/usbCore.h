@@ -71,18 +71,6 @@ enum
 , EP1
 , EP2
 , EP3
-, EP4
-, EP5
-, DUMMY
-, LOADER
-};
-
-enum
-{ uPOWER
-, uENUMERATED
-, uENABLED
-, uADDRESS
-, uREADY
 };
 
 // The order here is important as it corresponds to the USB_STAT register numbering
@@ -99,10 +87,17 @@ enum
 extern bdt_t bdtTable[USBCFG_BDT_ENTRY_COUNT];
 extern uint8_t epBuffers[USBCFG_BDT_ENTRY_COUNT][USBCFG_EP_BUF_SIZE];
 
-typedef bool (*usbInterfaceReqHandler)(uint8_t ep, usbSetupPacket_t *pkt);
-typedef void (*usbDataIsrHandler)(uint8_t ep, uint8_t *data, uint16_t len);
+#define USB_CTRL_EVENT_RESET        (1)  // Reset occurred
+#define USB_CTRL_EVENT_ENUMERATION  (2)  // Enumeration occurred
+#define USB_CTRL_EVENT_REQUEST      (3)  // Request for CDC processing
 
-extern void usbCoreInit(usbInterfaceReqHandler reqHandler, usbDataIsrHandler dataHandler);
+typedef void (*usbCtrlIsrHandler)(int event);
+typedef void (*usbDataIsrHandler)(uint8_t ep, uint8_t *data, uint16_t len);
+typedef bool (*usbInterfaceReqHandler)(uint8_t ep, usbSetupPacket_t *pkt);
+
+extern void usbCoreInit( usbCtrlIsrHandler ctrlHandler
+                       , usbDataIsrHandler dataHandler
+                       , usbInterfaceReqHandler reqHandler);
 extern void usbCoreEpTxTransfer(uint8_t ep, uint8_t *data, uint8_t len);
 
 #endif // _USBCORE_H_
