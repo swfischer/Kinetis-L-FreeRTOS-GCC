@@ -34,9 +34,8 @@
 
 #include "kinetis.h"
 #include "os.h"
-#include "ringBuffer.h"
 #include "usbCdc.h"
-#include "usbCore.h"
+#include "usbDev.h"
 
 // Not really used, but could be used to denote VBUS state changes
 volatile uint8_t usbCdcIsrFlags = 0;
@@ -66,7 +65,7 @@ void usbCdcInit(usbCtrlIsrHandler ctrlHandler, usbDataIsrHandler dataHandler)
    sAppDataIsrHandler = dataHandler;
 
    // USB core initialization
-   usbCoreInit(ctrlHandler, cdcDataIsrHandler, interfaceReqHandler);
+   usbDevInit(ctrlHandler, cdcDataIsrHandler, interfaceReqHandler);
 
    // Line Coding Initialization
    sLineCoding.dteRate    = 9600;
@@ -86,7 +85,7 @@ void usbCdcEngine(void)
       
       if (sEventFlags && EVENT_SET_CTRL_LINE_STATE)
       {
-         usbCoreEpTxTransfer(EP0, 0, 0);
+         usbDevEpTxTransfer(EP0, 0, 0);
          
          sEventFlags &= ~(EVENT_SET_CTRL_LINE_STATE);
       }
@@ -112,7 +111,7 @@ static void cdcDataIsrHandler(uint8_t ep, uint8_t *data, uint16_t len)
             *p++ = *d++;
          }
 
-         usbCoreEpTxTransfer(EP0, 0, 0);
+         usbDevEpTxTransfer(EP0, 0, 0);
 
          sEventFlags &= ~(EVENT_SET_LINE_CODING);
       }
@@ -130,10 +129,10 @@ static bool interfaceReqHandler(uint8_t ep, usbSetupPacket_t *pkt)
    switch (pkt->bRequest)
    {
    case USB_REQ_GET_INTERFACE:
-      usbCoreEpTxTransfer(ep, &sAltInterface, 1);
+      usbDevEpTxTransfer(ep, &sAltInterface, 1);
       break;
    case USB_CDC_REQ_GET_LINE_CODING:
-      usbCoreEpTxTransfer(ep, (uint8_t*)&sLineCoding, sizeof(sLineCoding));
+      usbDevEpTxTransfer(ep, (uint8_t*)&sLineCoding, sizeof(sLineCoding));
       break;
    case USB_CDC_REQ_SET_LINE_CODING:
       sEventFlags |= EVENT_SET_LINE_CODING;

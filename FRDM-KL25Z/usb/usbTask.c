@@ -32,7 +32,7 @@
 #include "clk.h"
 #include "os.h"
 #include "usbCdc.h"
-#include "usbCore.h"
+#include "usbDev.h"
 #include "usbTask.h"
 
 // Event Group Bits:
@@ -102,6 +102,6 @@ static void taskDataIsrHandler(uint8_t ep, uint8_t *data, uint16_t len)
       usbSIE_CONTROL(EP_OUT);
 
       // Send it back to the PC
-      usbCoreEpTxTransfer(EP_IN, data, len);
+      usbDevEpTxTransfer(EP_IN, data, len);
    }
 }

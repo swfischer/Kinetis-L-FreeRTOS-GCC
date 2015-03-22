@@ -95,9 +95,10 @@ typedef void (*usbCtrlIsrHandler)(int event);
 typedef void (*usbDataIsrHandler)(uint8_t ep, uint8_t *data, uint16_t len);
 typedef bool (*usbInterfaceReqHandler)(uint8_t ep, usbSetupPacket_t *pkt);
 
-extern void usbCoreInit( usbCtrlIsrHandler ctrlHandler
-                       , usbDataIsrHandler dataHandler
-                       , usbInterfaceReqHandler reqHandler);
-extern void usbCoreEpTxTransfer(uint8_t ep, uint8_t *data, uint8_t len);
+extern void usbDevInit( usbCtrlIsrHandler ctrlHandler
+                      , usbDataIsrHandler dataHandler
+                      , usbInterfaceReqHandler reqHandler
+                      );
+extern void usbDevEpTxTransfer(uint8_t ep, uint8_t *data, uint8_t len);
 
 #endif // _USBCORE_H_

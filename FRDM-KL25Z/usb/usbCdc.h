@@ -34,7 +34,7 @@
 
 #include <stdint.h>
 
-#include "usbCore.h"
+#include "usbDev.h"
 
 #define EP_OUT          3
 #define EP_IN           2

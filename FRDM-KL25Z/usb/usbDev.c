@@ -31,15 +31,13 @@
 
 #include <stdint.h>
 
-#include "Settings.h"
-
 #include "clk.h"
 #include "irq.h"
 #include "kinetis.h"
 #include "os.h"
 #include "usb.h"
 #include "usbCfg.h"
-#include "usbCore.h"
+#include "usbDev.h"
 #include "utils.h"
 
 bdt_t bdtTable[USBCFG_BDT_ENTRY_COUNT] __attribute__((__aligned__(512)));
@@ -73,10 +71,10 @@ static void tokenHandler(void);
 // External Functions
 // ----------------------------------------------------------------------------
 
-void usbCoreInit( usbCtrlIsrHandler ctrlHandler
-                , usbDataIsrHandler dataHandler
-                , usbInterfaceReqHandler reqHandler
-                )
+void usbDevInit( usbCtrlIsrHandler ctrlHandler
+               , usbDataIsrHandler dataHandler
+               , usbInterfaceReqHandler reqHandler
+               )
 {
    sCtrlIsrHandler = ctrlHandler;
    sDataIsrHandler = dataHandler;
@@ -112,10 +110,10 @@ void usbCoreInit( usbCtrlIsrHandler ctrlHandler
    USB0_CTL |= 0x01;
 
    // Pull up enable
-   FLAG_SET(USB_CONTROL_DPPULLUPNONOTG_SHIFT, USB0_CONTROL);
+   USB0_CONTROL |= USB_CONTROL_DPPULLUPNONOTG_MASK;
 }
 
-void usbCoreEpTxTransfer(uint8_t ep, uint8_t *data, uint8_t length)
+void usbDevEpTxTransfer(uint8_t ep, uint8_t *data, uint8_t length)
 {
    uint16_t epIdx;
    uint8_t *buffer;
@@ -151,15 +149,15 @@ void usbCoreEpTxTransfer(uint8_t ep, uint8_t *data, uint8_t length)
    }
 
    // USB Flags Handling
-   if (FLAG_CHK(ep, sTxDataFlags))
+   if (sTxDataFlags & (1 << ep))
    {
       bdtTable[epIdx].stat = kUDATA0;
-      FLAG_CLR(ep, sTxDataFlags);
+      sTxDataFlags &= ~(1 << ep);
    }
    else
    {
       bdtTable[epIdx].stat = kUDATA1;
-      FLAG_SET(ep, sTxDataFlags);
+      sTxDataFlags |= (1 << ep);
    }
 }
 
@@ -173,7 +171,7 @@ static void ep0TxHandler(void)
    {
       USB0_ADDR = sUsbAddr;
    }
-   usbCoreEpTxTransfer(0, 0, 0);
+   usbDevEpTxTransfer(0, 0, 0);
 }
 
 static void ep0RxHandler(void)
@@ -200,15 +198,15 @@ static void epSetupHandler(usbSetupPacket_t *pkt)
    {
    case USB_REQ_GET_STATUS:
       status = (sEpHalt & (1 << (pkt->wIndex.bytes.lo & 0xf))) ? 0x0100 : 0x0000;
-      usbCoreEpTxTransfer(EP0, (uint8_t*) &status, 2);
+      usbDevEpTxTransfer(EP0, (uint8_t*) &status, 2);
       break;
    case USB_REQ_CLR_FEATURE:
       sEpHalt &= ~(1 << (pkt->wIndex.bytes.lo & 0xf));
-      usbCoreEpTxTransfer(EP0, 0, 0);
+      usbDevEpTxTransfer(EP0, 0, 0);
       break;
    case USB_REQ_SET_FEATURE:
       sEpHalt |= (1 << (pkt->wIndex.bytes.lo & 0xf));
-      usbCoreEpTxTransfer(EP0, 0, 0);
+      usbDevEpTxTransfer(EP0, 0, 0);
       break;
    default:
       break;
@@ -410,7 +408,7 @@ static void setupHandler(usbSetupPacket_t *pkt)
 {
    bool expectDataPkt = false;
 
-   FLAG_CLR(0, sTxDataFlags);
+   sTxDataFlags &= ~(1 << EP0);
 
    switch (pkt->bmRequestType & USB_REQ_TYPE_TO_MASK)
    {
@@ -445,20 +443,20 @@ static void standardReqHandler(usbSetupPacket_t *pkt)
    switch (pkt->bRequest)
    {
    case USB_REQ_SET_ADDRESS:
-      usbCoreEpTxTransfer(EP0, 0, 0);
+      usbDevEpTxTransfer(EP0, 0, 0);
       sUsbAddr = pkt->wValue.bytes.lo;
       break;
    case USB_REQ_GET_DESC:
       switch (pkt->wValue.bytes.hi)
       {
       case USB_DEVICE_DESC:
-         usbCoreEpTxTransfer(EP0, (uint8_t*)&usbCfgDevDesc, sizeof(usbCfgDevDesc));
+         usbDevEpTxTransfer(EP0, (uint8_t*)&usbCfgDevDesc, sizeof(usbCfgDevDesc));
          break;
       case USB_CONFIG_DESC:
-         usbCoreEpTxTransfer(EP0, (uint8_t*)&usbCfg, sizeof(usbCfg));
+         usbDevEpTxTransfer(EP0, (uint8_t*)&usbCfg, sizeof(usbCfg));
          break;
       case USB_STRING_DESC:
-         usbCoreEpTxTransfer( EP0
+         usbDevEpTxTransfer( EP0
                             , (uint8_t*) usbCfgStringTable[pkt->wValue.bytes.lo]
                             , usbCfgStringTable[pkt->wValue.bytes.lo][0]
                             );
@@ -473,7 +471,7 @@ static void standardReqHandler(usbSetupPacket_t *pkt)
       if (sConfig)
       {
          setInterface();
-         usbCoreEpTxTransfer(EP0, 0, 0);
+         usbDevEpTxTransfer(EP0, 0, 0);
          if (sCtrlIsrHandler)
          {
             sCtrlIsrHandler(USB_CTRL_EVENT_ENUMERATION);
@@ -481,11 +479,11 @@ static void standardReqHandler(usbSetupPacket_t *pkt)
       }
       break;
    case USB_REQ_GET_CONFIG:
-      usbCoreEpTxTransfer(EP0, (uint8_t*) &sConfig, 1);
+      usbDevEpTxTransfer(EP0, (uint8_t*) &sConfig, 1);
       break;
    case USB_REQ_GET_STATUS:
       status = 0;
-      usbCoreEpTxTransfer(EP0, (uint8_t*) &status, 2);
+      usbDevEpTxTransfer(EP0, (uint8_t*) &status, 2);
       break;
    default:
       ep0Stall();
