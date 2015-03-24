@@ -131,7 +131,12 @@ int32_t osSignalWait(osSignalId signal_id, int32_t signals, uint32_t millisec, b
    uint32_t ticks = millisec / MS_PER_TICK;
    bool waitForAll = true;
 
-   if (signals == 0)
+   if (millisec == WAIT_FOREVER)
+   {
+      ticks = WAIT_FOREVER;
+   }
+
+   if (signals == WAIT_ANY_SIGNAL)
    {
       signals = 0xff; // 8 event bits by default
       waitForAll = false;

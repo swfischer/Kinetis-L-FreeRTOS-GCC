@@ -71,7 +71,7 @@ In ./apps/*:
 In ./usb/*:
 
 * ported the Freescale CDC USB driver to the framework
-* trying to clean it up and make more sensible/usable
+* cleaned up the USB driver to make it more sensible/usable
 
 # Contact
 

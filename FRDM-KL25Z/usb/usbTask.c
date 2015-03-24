@@ -34,15 +34,24 @@
 #include "usbCdc.h"
 #include "usbDev.h"
 #include "usbTask.h"
+#include "utilsBuf.h"
 
 // Event Group Bits:
 #define USB_STATE_CHANGE_BIT  (1 << 0)
-#define USB_RX_DATA_BIT       (1 << 1)
-#define USB_CDC_PROCESS_BIT   (1 << 2)
+#define USB_CDC_PROCESS_BIT   (1 << 1)
+#define USB_RX_DATA_BIT       (1 << 2)
+#define USB_TX_DONE_BIT       (1 << 3)
 static osSignalId sEvents;
 
 static bool sEnumerated = false;
+static bool sTxInProgress = false;
 
+#define IN_BUFFER_SIZE  (64)
+static utilsBuf_t sInBuf;
+static uint8_t sInBuffer[IN_BUFFER_SIZE];
+static uint8_t sStagingBuffer[IN_BUFFER_SIZE];
+
+static void loopback(void);
 static void taskCtrlIsrHandler(int event);
 static void taskDataIsrHandler(uint8_t ep, uint8_t *data, uint16_t len);
 
@@ -52,7 +61,13 @@ static void taskDataIsrHandler(uint8_t ep, uint8_t *data, uint16_t len);
 
 void usbTaskEntry(void *pParameters)
 {
+   int32_t events = 0;
+
 //   osDelay(5000); // this is a bit of a hack just to allow for console debugging
+
+   sInBuf.size = IN_BUFFER_SIZE;
+   sInBuf.buf = sInBuffer;
+   utilsBufInit(&sInBuf);
 
    sEvents = osSignalGroupCreate();
    usbCdcInit(taskCtrlIsrHandler, taskDataIsrHandler);
@@ -61,13 +76,23 @@ void usbTaskEntry(void *pParameters)
    {
       if (!sEnumerated)
       {
+         utilsBufReset(&sInBuf);
          osSignalWait(sEvents, USB_STATE_CHANGE_BIT, WAIT_FOREVER, true);
       }
       else
       {
-         usbCdcEngine();
+         if (events & USB_CDC_PROCESS_BIT || events & USB_STATE_CHANGE_BIT)
+         {
+            usbCdcEngine();
+         }
+         if (events & USB_TX_DONE_BIT)
+         {
+            sTxInProgress = false;
+         }
 
-         osSignalWait(sEvents, USB_STATE_CHANGE_BIT | USB_CDC_PROCESS_BIT, WAIT_FOREVER, true);
+         loopback();
+
+         events = osSignalWait(sEvents, WAIT_ANY_SIGNAL, WAIT_FOREVER, true);
       }
    }
 }
@@ -75,6 +100,23 @@ void usbTaskEntry(void *pParameters)
 // ----------------------------------------------------------------------------
 // Local Functions
 // ----------------------------------------------------------------------------
+
+static void loopback(void)
+{
+   int cnt;
+   int i;
+
+   cnt = utilsBufCount(&sInBuf);
+   if (!sTxInProgress && cnt > 0)
+   {
+      for (i = 0; i < cnt; i++)
+      {
+         sStagingBuffer[i] = utilsBufPull(&sInBuf);
+      }
+      sTxInProgress = true;
+      usbDevEpTxTransfer(EP_DATA_TX, sStagingBuffer, cnt);
+   }
+}
 
 static void taskCtrlIsrHandler(int event)
 {
@@ -92,18 +134,27 @@ static void taskCtrlIsrHandler(int event)
       osSignalSet(sEvents, USB_CDC_PROCESS_BIT);
       break;
    case USB_CTRL_EVENT_TX_DONE:
+      osSignalSet(sEvents, USB_TX_DONE_BIT);
       break;
    };
 }
 
 static void taskDataIsrHandler(uint8_t ep, uint8_t *data, uint16_t len)
 {
+   int i;
+
    if (ep == EP_DATA_RX)
    {
       usbDevEpReset(EP_DATA_RX);
       usbDevEpControl(EP_DATA_RX, USB_CTRL_SIE);
 
-      // Send it back to the PC
-      usbDevEpTxTransfer(EP_DATA_TX, data, len);
+      if (len > 0)
+      {
+         for (i = 0; i < len; i++)
+         {
+            utilsBufPush(&sInBuf, data[i]);
+         }
+         osSignalSet(sEvents, USB_RX_DATA_BIT);
+      }
    }
 }

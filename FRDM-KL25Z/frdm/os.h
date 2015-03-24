@@ -195,6 +195,8 @@ static inline osSignalId osSignalGroupCreate(void)
    return xEventGroupCreate();
 }
 
+#define WAIT_ANY_SIGNAL (0)
+
 extern int32_t osSignalClear(osSignalId signal_id, int32_t signal);
 extern int32_t osSignalSet(osSignalId signal_id, int32_t signal);
 extern int32_t osSignalWait(osSignalId signal_id, int32_t signals, uint32_t millisec, bool clear);

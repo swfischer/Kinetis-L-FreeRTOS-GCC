@@ -60,6 +60,7 @@ OBJS = $(FRDM_PATH)/startup.o \
        $(USB_PATH)/usbCdc.o \
        $(USB_PATH)/usbDev.o \
        $(USB_PATH)/usbTask.o \
+       $(UTIL_PATH)/utilsBuf.o \
        $(UTIL_PATH)/utilsHwDelay.o \
        $(UTIL_PATH)/utilsString.o \
        $(UTIL_PATH)/utilsPrintf.o \
