@@ -72,6 +72,7 @@ In ./usb/*:
 
 * ported the Freescale CDC USB driver to the framework
 * cleaned up the USB driver to make it more sensible/usable
+* the console task can now output the console to either USB port based on the USB_CONSOLE_ENABLED flag in "frdm/frdmCfg.h"
 
 # Contact
 
