@@ -237,6 +237,7 @@ int uartWrite(uint8_t *buf, uint16_t len)
    else
    {
       startWrite(buf, len);
+      rc = 0;
    }
 
    return rc;

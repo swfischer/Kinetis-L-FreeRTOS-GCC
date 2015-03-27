@@ -32,6 +32,7 @@
 
 #include "kinetis.h"
 
+// Uncomment to enable the USB device driver
 #define USB_DEVICE_ENABLED
 
 #ifdef USB_DEVICE_ENABLED
@@ -67,5 +68,14 @@
 #define MMA8451_SA0_ONE // SA0 pulled high
 
 //#define ADC_KEEP_CLKS_ENABLED
+
+#ifdef USB_DEVICE_ENABLED
+// Uncomment to enable the console through the USB device driver
+#define USB_CONSOLE_ENABLED
+
+#ifndef USB_CONSOLE_ENABLED
+#define USB_LOOPBACK_ENABLED
+#endif
+#endif
 
 #endif // _FRDMCFG_H_

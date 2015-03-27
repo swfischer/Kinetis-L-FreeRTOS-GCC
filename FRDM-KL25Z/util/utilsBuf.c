@@ -30,6 +30,7 @@
 #include <stdlib.h> // for NULL
 #include <stdint.h>
 
+#include "os.h"
 #include "utilsBuf.h"
 
 #define STATE_VALID  (0xC8)
@@ -44,7 +45,7 @@ int utilsBufInit(utilsBuf_t *obj)
 {
    int error = -1;
 
-   if (obj == NULL || obj->buf == NULL || obj->size <= 2 || obj->size > sizeof(uint8_t))
+   if (obj == NULL || obj->buf == NULL || obj->size <= 2 || obj->size > UINT8_MAX)
    {
       // Just return an error
    }
@@ -70,7 +71,7 @@ int utilsBufCount(utilsBuf_t *obj)
    return cnt;
 }
 
-uint8_t utilsBufPeekIdx(utilsBuf_t *obj, uint8_t idx)
+uint8_t utilsBufPeek(utilsBuf_t *obj)
 {
    uint8_t byte = 0;
 
@@ -78,13 +79,13 @@ uint8_t utilsBufPeekIdx(utilsBuf_t *obj, uint8_t idx)
    {
       int cnt = getCount(obj);
 
-      if (idx < cnt)
+      if (cnt > 0)
       {
-         int i = obj->rdIdx + idx;
+         int i = obj->wrIdx - 1;
 
-         if (i >= obj->size)
+         if (i < 0)
          {
-            i -= obj->size;
+            i += obj->size;
          }
 
          byte = obj->buf[i];
@@ -94,7 +95,7 @@ uint8_t utilsBufPeekIdx(utilsBuf_t *obj, uint8_t idx)
    return byte;
 }
 
-void utilBufPop(utilsBuf_t *obj)
+void utilsBufPop(utilsBuf_t *obj)
 {
    if (obj != NULL && obj->state == STATE_VALID)
    {

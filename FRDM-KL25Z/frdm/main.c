@@ -37,6 +37,7 @@
 #include "os.h"
 #include "pinmux.h"
 #include "touch.h"
+#include "uart.h"
 #include "usbTask.h"
 
 #define CONSOLE_PRIORITY    (tskIDLE_PRIORITY + 2)
@@ -49,6 +50,9 @@
 #define USB_STACK_SIZE      (4 * configMINIMAL_STACK_SIZE)
 
 static void simInit(void);
+#ifdef USB_CONSOLE_ENABLED
+static void uartCallback(int event);
+#endif
 
 // ----------------------------------------------------------------------------
 // OS and IRQ Interrupt Handlers
@@ -109,6 +113,10 @@ int main( void )
    osThreadCreate(&tDef, NULL);
 #endif
 
+#ifdef USB_CONSOLE_ENABLED
+   uartInit(BAUD_RATE, uartCallback);
+#endif
+
    osKernelStart();
 
    // Should never get here
@@ -144,3 +152,9 @@ static void simInit(void)
    SIM_SOPT1CFG |= SIM_SOPT1CFG_URWE_MASK | SIM_SOPT1CFG_USSWE_MASK | SIM_SOPT1CFG_UVSWE_MASK;
 #endif
 }
+
+#ifdef USB_CONSOLE_ENABLED
+static void uartCallback(int event)
+{
+}
+#endif

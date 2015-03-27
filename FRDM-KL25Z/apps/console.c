@@ -32,9 +32,31 @@
 #include <stdint.h>
 
 #include "console.h"
+#include "frdmCfg.h"
 #include "os.h"
 #include "uart.h"
+#include "usbTask.h"
 #include "utils.h"
+
+#ifdef USB_CONSOLE_ENABLED
+#define DEVICE_INIT(b,c)      usbConsoleInit(c)
+#define DEVICE_ECHO_ENABLE(e) usbConsoleEchoEnable(e)
+#define DEVICE_READ(b,l)      usbConsoleRead(b, l)
+#define DEVICE_READ_CNT()     usbConsoleReadCnt()
+#define DEVICE_READ_FLUSH()   usbConsoleReadFlush()
+#define DEVICE_WRITE(b,l)     usbConsoleWrite(b, l)
+#define DEVICE_EVENT_READ     USB_CONSOLE_EVENT_READ_BIT
+#define DEVICE_EVENT_WRITE    USB_CONSOLE_EVENT_WRITE_BIT
+#else
+#define DEVICE_INIT(b,c)      uartInit(b, c)
+#define DEVICE_ECHO_ENABLE(e) uartEchoEnable(e)
+#define DEVICE_READ(b,l)      uartRead(b, l)
+#define DEVICE_READ_CNT()     uartReadCnt()
+#define DEVICE_READ_FLUSH()   uartReadFlush()
+#define DEVICE_WRITE(b,l)     uartWrite(b, l)
+#define DEVICE_EVENT_READ     UART_EVENT_READ_BIT
+#define DEVICE_EVENT_WRITE    UART_EVENT_WRITE_BIT
+#endif
 
 #define WRITEQ_COUNT       (4)
 #define INVALID_WRITEQ_IDX (-1)
@@ -65,7 +87,7 @@ static uint8_t sPendingStrings = 0;
 
 static int  getNextWriteIdx(void);
 static bool prepareWrite(void);
-static void uartCallback(int event);
+static void deviceCallback(int event);
 
 // ----------------------------------------------------------------------------
 // External Functions
@@ -80,7 +102,7 @@ int consoleInit(uint32_t baud)
    {
       // Failed to create the event group
    }
-   else if (uartInit(baud, uartCallback) != 0)
+   else if (DEVICE_INIT(baud, deviceCallback) != 0)
    {
       // Failed to initialize the uart
    }
@@ -127,7 +149,7 @@ int consoleGetInput(char *buf, int len)
          osSignalWait(sEvents, CONSOLE_READ_PENDING_BIT, WAIT_FOREVER, true);
       }
 
-      bytes = uartRead((uint8_t*) buf, len);
+      bytes = DEVICE_READ((uint8_t*) buf, len);
       sPendingStrings --;
    }
 
@@ -144,7 +166,7 @@ int consoleGetInputCnt(void)
    }
    else
    {
-      cnt = uartReadCnt();
+      cnt = DEVICE_READ_CNT();
    }
 
    return cnt;
@@ -191,6 +213,30 @@ void consolePrintf(const char *format, ...)
 // Local Functions
 // ----------------------------------------------------------------------------
 
+static void deviceCallback(int event)
+{
+   if (event & DEVICE_EVENT_READ)
+   {
+      sPendingStrings++;
+      osSignalSet(sEvents, CONSOLE_READ_PENDING_BIT);
+   }
+   if (event & DEVICE_EVENT_WRITE)
+   {
+      register int idx = sWriteQOutputIdx;
+
+      sWriteQ[idx].state = WRITEQ_STATE_EMPTY;
+      idx ++;
+      sWriteQOutputIdx = (idx >= WRITEQ_COUNT) ? 0 : (idx);
+      osSignalSet(sEvents, CONSOLE_WRITE_FREED_BIT);
+
+      if (!prepareWrite())
+      {
+         DEVICE_ECHO_ENABLE(true);
+         osSignalSet(sEvents, CONSOLE_FLUSH_COMPLETE_BIT);
+      }
+   }
+}
+
 static int getNextWriteIdx(void)
 {
    int idx = INVALID_WRITEQ_IDX;
@@ -220,6 +266,7 @@ static bool prepareWrite(void)
 {
    bool push = false;
    int idx;
+   int rc;
 
    osDisableInterrupts();
    idx = sWriteQOutputIdx;
@@ -231,35 +278,16 @@ static bool prepareWrite(void)
 
    if (push)
    {
-      uartEchoEnable(false);
+      DEVICE_ECHO_ENABLE(false);
       sWriteQ[idx].state = WRITEQ_STATE_OUTPUTING;
       osSignalClear(sEvents, CONSOLE_FLUSH_COMPLETE_BIT);
-      uartWrite((uint8_t*) sWriteQ[idx].buf, sWriteQ[idx].bytes);
+      rc = DEVICE_WRITE((uint8_t*) sWriteQ[idx].buf, sWriteQ[idx].bytes);
+      if (rc != 0)  // Chk for errors
+      {
+         // Fake a write complete callback to prevent lockups
+         deviceCallback(DEVICE_EVENT_WRITE);
+      }
    }
 
    return push;
-}
-
-static void uartCallback(int event)
-{
-   if (event & UART_EVENT_READ_BIT)
-   {
-      sPendingStrings++;
-      osSignalSet(sEvents, CONSOLE_READ_PENDING_BIT);
-   }
-   if (event & UART_EVENT_WRITE_BIT)
-   {
-      register int idx = sWriteQOutputIdx;
-
-      sWriteQ[idx].state = WRITEQ_STATE_EMPTY;
-      idx ++;
-      sWriteQOutputIdx = (idx >= WRITEQ_COUNT) ? 0 : (idx);
-      osSignalSet(sEvents, CONSOLE_WRITE_FREED_BIT);
-
-      if (!prepareWrite())
-      {
-         uartEchoEnable(true);
-         osSignalSet(sEvents, CONSOLE_FLUSH_COMPLETE_BIT);
-      }
-   }
 }

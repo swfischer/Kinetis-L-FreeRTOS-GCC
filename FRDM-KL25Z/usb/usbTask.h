@@ -32,4 +32,17 @@
 
 extern void usbTaskEntry(void *pParameters);
 
+#ifdef USB_CONSOLE_ENABLED
+#define USB_CONSOLE_EVENT_READ_BIT   (1 << 0)
+#define USB_CONSOLE_EVENT_WRITE_BIT  (1 << 1)
+typedef void (*usbConsoleCb)(int event);
+
+extern int  usbConsoleInit(usbConsoleCb callback);
+extern void usbConsoleEchoEnable(bool en);
+extern int  usbConsoleRead(uint8_t *buf, uint16_t len);
+extern int  usbConsoleReadCnt(void);
+extern void usbConsoleReadFlush(void);
+extern int  usbConsoleWrite(uint8_t *buf, uint16_t len);
+#endif
+
 #endif // _USBTASK_H_

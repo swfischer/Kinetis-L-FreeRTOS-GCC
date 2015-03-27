@@ -52,8 +52,8 @@ typedef struct
 extern int utilsBufInit(utilsBuf_t *obj);
 // Returns the number of bytes on the buffer
 extern int utilsBufCount(utilsBuf_t *obj);
-// Returns the idx'th byte on the buffer
-extern uint8_t utilsBufPeekIdx(utilsBuf_t *obj, uint8_t idx);
+// Returns the top byte on the buffer
+extern uint8_t utilsBufPeek(utilsBuf_t *obj);
 // Throw away the buffer's top byte
 extern void utilsBufPop(utilsBuf_t *obj);
 // Returns the buffer's top byte
