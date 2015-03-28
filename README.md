@@ -4,9 +4,34 @@ A Framework for development on Kinetis-L MCUs.
 
 # Purpose
 
-* The main reason for this project was that I was given a few FRDM-KL25Z boards but I could not find a decent baseline that wasn't tied to a specific IDE like Code Warrior or the like.  Being an embedded software engineer I desire to understand all aspects of how the code boots and the hardware gets configured, and most of those IDE based environments tend to hide portions of that process.  GCC is my toolchain of choice, so I used [Andrew Payne's bare metal demo](http://github.com/payne92/bare-metal-arm) as a starting point and built my framework from there.
+* The main reason for this project was that I was given a few FRDM-KL25Z boards but I could not find a decent baseline that wasn't tied to a specific IDE such as Code Warrior or the like.  Being an embedded software engineer I desire to understand all aspects of how the code boots and the hardware gets configured, and most of those IDE based environments tend to hide portions of that process.  GCC is my toolchain of choice, so I used [Andrew Payne's bare metal demo](http://github.com/payne92/bare-metal-arm) as a starting point and built my framework from there.
 * In the interest of knowing everything that is in the build and conserving ROM/RAM space, I chose not to include any sort of standard C-library.  This code is specifically built with the "-nostdlib" option and any standard C functions that I needed were either built myself or found on-line.  Note that I've found that even though the "-nostdlib" option is specified, the arm-none-eabi-gcc toolchain will pull in "newlib" (the standard C-library it's built to use) if you include any calls into it.  This can be seen either by looking at the "frdm.asm" file, which the makefile creates, or just by observing a big jump in the "frdm.s19" file size.
 * Finally, I wanted to play around with an RTOS I that was not familiar with, so I built on top of FreeRTOS.  FreeRTOS has its own heap code, so this helped confirm my decision about not using a standard C-library.
+
+# Functionality
+
+This code, when booted, will produce a command line prompt that can be used to test different portions of the hardware.
+
+As currently configured, the command line is produced on the KL25Z USB port.  The OpenSDA USB port is used for flashing and debugging.  This can be changed such that the OpenSDA USB port is used for the command line by commenting out the "USB_CONSOLE_ENABLED" flag in the "frdm/frdmCfg.h" file.
+
+By default the multi-color LED boots into a "glow" mode where each color (red, green, blue) is slowly and individually changed from off to fully on and back to off.
+
+The commands available at the prompt allow for the following behaviors:
+
+* Set the LED to glow in the default behavior described above ("led glow").
+* Set the LED to glow in only one color (for instance "led glow red").
+* Set the LED to change the blue color intensity based on the touch pad touch position ("led touch").
+* Set the LED to change a specific color intensity based on the touch pad touch position ("led touch green").
+* Set the LED color and intensity based on the accelerometer ("led accel").  In this case each color (red, green, blue) is controlled by a specific accelerometer axis, thus different combinations of color can be produced based on rotating the FRDM-KL25Z board on its three axes.
+* Display the current accelerometer data ("accel" or "accel timed").
+* Display the current touch pad touch position ("touch" or "touch timed").
+* Display an ADC channel count value ("adc 1" or "adc 1 timed").
+* Display the MCU temperature ("adc temp" or "adc temp timed").
+* Display the current clock gate settings ("clock").
+* Enable or disable a clock gate ("clock enable UART0" or "clock disable UART0").
+* Display a memory location ("mem 0x40049000" or "mem 0x40049000 5").
+* Display version and other system information ("version").
+* Reboot the KL25Z ("reboot").
 
 # Compiling
 
