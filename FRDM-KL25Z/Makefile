@@ -54,6 +54,7 @@ OBJS = $(FRDM_PATH)/startup.o \
        $(DRV_PATH)/i2c.o \
        $(DRV_PATH)/irq.o \
        $(DRV_PATH)/led.o \
+       $(DRV_PATH)/servo.o \
        $(DRV_PATH)/touch.o \
        $(DRV_PATH)/uart.o \
        $(USB_PATH)/usbCfg.o \

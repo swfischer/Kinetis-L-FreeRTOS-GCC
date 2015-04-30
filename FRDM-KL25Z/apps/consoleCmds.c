@@ -36,8 +36,10 @@
 #include "consoleCmds.h"
 #include "consoleTask.h"
 #include "frdmCfg.h"
+#include "gpio.h"
 #include "ledTask.h"
 #include "os.h"
+#include "servo.h"
 #include "touch.h"
 #include "utils.h"
 
@@ -57,6 +59,7 @@ static bool commandClock(int count, char **token);
 static bool commandLed(int count, char **token);
 static bool commandMem(int count, char **token);
 static bool commandReboot(int count, char **token);
+static bool commandServo(int count, char **token);
 static bool commandTouch(int count, char **token);
 static bool commandVersion(int count, char **token);
 static int  readTemp(void);
@@ -73,6 +76,7 @@ void consoleCmdsInit(void)
    consoleTaskRegisterCommand("led", commandLed);
    consoleTaskRegisterCommand("mem", commandMem);
    consoleTaskRegisterCommand("reboot", commandReboot);
+   consoleTaskRegisterCommand("servo", commandServo);
    consoleTaskRegisterCommand("touch", commandTouch);
    consoleTaskRegisterCommand("version", commandVersion);
 
@@ -372,6 +376,102 @@ static bool commandReboot(int count, char **token)
    }
 
    return true;
+}
+
+static bool commandServo(int count, char **token)
+{
+   bool handled = true;
+
+   if ((IS_2_TOKENS() || IS_3_TOKENS()) && TOKEN_MATCH(1, "help"))
+   {
+      consolePrintf("%s - command to interact with servo motors\n", token[0]);
+
+      if (IS_3_TOKENS())
+      {
+         consolePrintf("\nCommand options are:\n\n");
+         consolePrintf("  init <n> - initialize the servo driver for <n> channels\n");
+         consolePrintf("  term - un-initialize the servo driver\n");
+         consolePrintf("  open <port> <pin> [cr] - open a servo channel\n");
+         consolePrintf("    <port> = the gpio port (A, B, C, D, or E)\n");
+         consolePrintf("    <pin>  = the gpio pin (0 - 31)\n");
+         consolePrintf("    [cr]   = denotes continuous rotation mode (0 or 1, default 0)\n");
+         consolePrintf("  close <ch> - close servo channel <ch>\n");
+         consolePrintf("  pos <ch> <p> - move the servo channel <ch> to position <p> (0 - 1000)\n");
+         consolePrintf("  deg <ch> <d> - move the servo channel <ch> to <p> degrees (0 - 180)\n");
+      }
+   }
+   else if (IS_3_TOKENS() && TOKEN_MATCH(1, "init"))
+   {
+      if (servoInit(utilsStrtoul(token[2], NULL, 0)) != 0)
+      {
+         consolePrintf("Success\n");
+      }
+      else
+      {
+         consolePrintf("Failure\n");
+      }
+   }
+   else if (IS_2_TOKENS() && TOKEN_MATCH(1, "term"))
+   {
+      servoTerm();
+   }
+   else if ((IS_4_TOKENS() || IS_5_TOKENS()) && TOKEN_MATCH(1, "open"))
+   {
+      int port = token[2][0] - 'A';
+      int pin = utilsStrtoul(token[3], NULL, 0);
+      int mode = SERVO_MODE_POSITIONAL;
+      uint8_t ch;
+
+      uint8_t gpioid = GPIO_PORT_PIN_TO_ID(port, pin);
+      if (IS_5_TOKENS())
+      {
+         if (utilsStrtoul(token[4], NULL, 0) == 1)
+         {
+            mode = SERVO_MODE_CONTINUOUS_ROTATION;
+         }
+      }
+
+      if ((ch = servoOpen(mode, gpioid)) != SERVO_INVALID_CHANNEL)
+      {
+         consolePrintf("Success (channel ID = %d)\n", ch);
+      }
+      else
+      {
+         consolePrintf("Failure\n");
+      }
+   }
+   else if (IS_3_TOKENS() && TOKEN_MATCH(1, "close"))
+   {
+      servoClose(utilsStrtoul(token[2], NULL, 0));
+   }
+   else if (IS_4_TOKENS() && TOKEN_MATCH(1, "pos"))
+   {
+      if (servoMovePosition(utilsStrtoul(token[2], NULL, 0), utilsStrtoul(token[3], NULL, 0)) != 0)
+      {
+         consolePrintf("Success\n");
+      }
+      else
+      {
+         consolePrintf("Failure\n");
+      }
+   }
+   else if (IS_4_TOKENS() && TOKEN_MATCH(1, "deg"))
+   {
+      if (servoMoveDegree(utilsStrtoul(token[2], NULL, 0), utilsStrtoul(token[3], NULL, 0)) != 0)
+      {
+         consolePrintf("Success\n");
+      }
+      else
+      {
+         consolePrintf("Failure\n");
+      }
+   }
+   else
+   {
+      handled = false;
+   }
+
+   return handled;
 }
 
 static bool commandTouch(int count, char **token)

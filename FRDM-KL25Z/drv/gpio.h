@@ -35,9 +35,20 @@
 
 #include "kinetis.h"
 
+#define GPIO_PIN_MAX   (31)
+
 #define GPIO_PORT_PIN_TO_ID(port, pin) ((port << 5) | (pin & 0x1f))
 #define GPIO_ID_TO_PORT(id) (id >> 5)
 #define GPIO_ID_TO_PIN(id)  (id & 0x1f)
+
+enum
+{ GPIO_PORT_A = 0
+, GPIO_PORT_B
+, GPIO_PORT_C
+, GPIO_PORT_D
+, GPIO_PORT_E
+, GPIO_PORT_MAX = GPIO_PORT_E
+};
 
 extern void gpioClearInterrupt(uint8_t gpioID);
 extern GPIO_MemMapPtr gpioIdToBase(uint8_t gpioID);
