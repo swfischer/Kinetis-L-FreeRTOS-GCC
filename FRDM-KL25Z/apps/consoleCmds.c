@@ -396,6 +396,8 @@ static bool commandServo(int count, char **token)
          consolePrintf("    <pin>  = the gpio pin (0 - 31)\n");
          consolePrintf("    [cr]   = denotes continuous rotation mode (0 or 1, default 0)\n");
          consolePrintf("  close <ch> - close servo channel <ch>\n");
+         consolePrintf("  en <ch> - enable servo channel <ch>\n");
+         consolePrintf("  dis <ch> - disable servo channel <ch>\n");
          consolePrintf("  pos <ch> <p> - move the servo channel <ch> to position <p> (0 - 1000)\n");
          consolePrintf("  deg <ch> <d> - move the servo channel <ch> to <p> degrees (0 - 180)\n");
       }
@@ -404,11 +406,11 @@ static bool commandServo(int count, char **token)
    {
       if (servoInit(utilsStrtoul(token[2], NULL, 0)) != 0)
       {
-         consolePrintf("Success\n");
+         consolePrintf("Failure\n");
       }
       else
       {
-         consolePrintf("Failure\n");
+         consolePrintf("Success\n");
       }
    }
    else if (IS_2_TOKENS() && TOKEN_MATCH(1, "term"))
@@ -431,39 +433,47 @@ static bool commandServo(int count, char **token)
          }
       }
 
-      if ((ch = servoOpen(mode, gpioid)) != SERVO_INVALID_CHANNEL)
+      if ((ch = servoOpen(mode, gpioid)) == SERVO_INVALID_CHANNEL)
       {
-         consolePrintf("Success (channel ID = %d)\n", ch);
+         consolePrintf("Failure\n");
       }
       else
       {
-         consolePrintf("Failure\n");
+         consolePrintf("Success (channel ID = %d)\n", ch);
       }
    }
    else if (IS_3_TOKENS() && TOKEN_MATCH(1, "close"))
    {
       servoClose(utilsStrtoul(token[2], NULL, 0));
    }
+   else if (IS_3_TOKENS() && TOKEN_MATCH(1, "en"))
+   {
+      servoEnable(utilsStrtoul(token[2], NULL, 0));
+   }
+   else if (IS_3_TOKENS() && TOKEN_MATCH(1, "dis"))
+   {
+      servoDisable(utilsStrtoul(token[2], NULL, 0));
+   }
    else if (IS_4_TOKENS() && TOKEN_MATCH(1, "pos"))
    {
       if (servoMovePosition(utilsStrtoul(token[2], NULL, 0), utilsStrtoul(token[3], NULL, 0)) != 0)
       {
-         consolePrintf("Success\n");
+         consolePrintf("Failure\n");
       }
       else
       {
-         consolePrintf("Failure\n");
+         consolePrintf("Success\n");
       }
    }
    else if (IS_4_TOKENS() && TOKEN_MATCH(1, "deg"))
    {
       if (servoMoveDegree(utilsStrtoul(token[2], NULL, 0), utilsStrtoul(token[3], NULL, 0)) != 0)
       {
-         consolePrintf("Success\n");
+         consolePrintf("Failure\n");
       }
       else
       {
-         consolePrintf("Failure\n");
+         consolePrintf("Success\n");
       }
    }
    else

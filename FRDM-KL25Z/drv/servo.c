@@ -109,7 +109,7 @@ int servoInit(uint8_t channels)
       // Already initialized, return success
       rc = 0;
    }
-   else if (channels < SERVO_MAX_CHANNELS)
+   else if (channels >= SERVO_MAX_CHANNELS)
    {
       // Just return an error
    }
