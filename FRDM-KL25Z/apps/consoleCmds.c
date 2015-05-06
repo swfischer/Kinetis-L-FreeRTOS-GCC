@@ -56,6 +56,7 @@ static adcDevice_t sAdcDevice;
 static bool commandAccel(int count, char **token);
 static bool commandAdc(int count, char **token);
 static bool commandClock(int count, char **token);
+static bool commandGpio(int count, char **token);
 static bool commandLed(int count, char **token);
 static bool commandMem(int count, char **token);
 static bool commandReboot(int count, char **token);
@@ -73,6 +74,7 @@ void consoleCmdsInit(void)
    consoleTaskRegisterCommand("accel", commandAccel);
    consoleTaskRegisterCommand("adc", commandAdc);
    consoleTaskRegisterCommand("clock", commandClock);
+   consoleTaskRegisterCommand("gpio", commandGpio);
    consoleTaskRegisterCommand("led", commandLed);
    consoleTaskRegisterCommand("mem", commandMem);
    consoleTaskRegisterCommand("reboot", commandReboot);
@@ -241,6 +243,64 @@ static bool commandClock(int count, char **token)
    return true;
 }
 
+static bool commandGpio(int count, char **token)
+{
+   bool handled = true;
+
+   if ((IS_2_TOKENS() || IS_3_TOKENS()) && TOKEN_MATCH(1, "help"))
+   {
+      consolePrintf("%s - command to interact with GPIOs\n", token[0]);
+
+      if (IS_3_TOKENS())
+      {
+         consolePrintf("\nCommand options are:\n\n");
+         consolePrintf("  id <port> <pin> - determine the GPIO ID for a given port & pin\n");
+         consolePrintf("    <port> = the gpio port (A, B, C, D, or E)\n");
+         consolePrintf("    <pin>  = the gpio pin (0 - 31)\n");
+         consolePrintf("  out <gpioID> - set a GPIO as an output\n");
+         consolePrintf("  in <gpioID> - set a GPIO as an input\n");
+         consolePrintf("  toggle <gpioID> - toggle a GPIO output\n");
+         consolePrintf("  read <gpioID> - return the current value of a GPIO\n");
+      }
+   }
+   else if (IS_4_TOKENS() && TOKEN_MATCH(1, "id"))
+   {
+      uint8_t port = token[2][0] - 'A';
+      uint8_t pin = TOKEN_VALUE(3);
+
+      if (port > GPIO_PORT_E || pin > GPIO_PIN_MAX)
+      {
+         consolePrintf("Invalid input\n");
+      }
+      else
+      {
+         consolePrintf("The GPIO ID is %d\n", GPIO_PORT_PIN_TO_ID(port, pin));
+      }
+   }
+   else if (IS_3_TOKENS() && TOKEN_MATCH(1, "out"))
+   {
+      gpioSetAsOutput(TOKEN_VALUE(2));
+   }
+   else if (IS_3_TOKENS() && TOKEN_MATCH(1, "in"))
+   {
+      gpioSetAsInput(TOKEN_VALUE(2));
+   }
+   else if (IS_3_TOKENS() && TOKEN_MATCH(1, "toggle"))
+   {
+      gpioOutputToggle(TOKEN_VALUE(2));
+   }
+   else if (IS_3_TOKENS() && TOKEN_MATCH(1, "read"))
+   {
+      consolePrintf("The GPIO is currently %d\n", gpioInputGet(TOKEN_VALUE(2)));
+   }
+   else
+   {
+      handled = false;
+   }
+
+   return handled;
+}
+
 static bool commandLed(int count, char **token)
 {
    bool handled = true;
@@ -391,9 +451,8 @@ static bool commandServo(int count, char **token)
          consolePrintf("\nCommand options are:\n\n");
          consolePrintf("  init <n> - initialize the servo driver for <n> channels\n");
          consolePrintf("  term - un-initialize the servo driver\n");
-         consolePrintf("  open <port> <pin> [cr] - open a servo channel\n");
-         consolePrintf("    <port> = the gpio port (A, B, C, D, or E)\n");
-         consolePrintf("    <pin>  = the gpio pin (0 - 31)\n");
+         consolePrintf("  open <gpioID> [cr] - open a servo channel\n");
+         consolePrintf("    <gpioID> = the GPIO ID of the desired output pin (see gpio command)\n");
          consolePrintf("    [cr]   = denotes continuous rotation mode (0 or 1, default 0)\n");
          consolePrintf("  close <ch> - close servo channel <ch>\n");
          consolePrintf("  en <ch> - enable servo channel <ch>\n");
@@ -417,17 +476,15 @@ static bool commandServo(int count, char **token)
    {
       servoTerm();
    }
-   else if ((IS_4_TOKENS() || IS_5_TOKENS()) && TOKEN_MATCH(1, "open"))
+   else if ((IS_3_TOKENS() || IS_4_TOKENS()) && TOKEN_MATCH(1, "open"))
    {
-      int port = token[2][0] - 'A';
-      int pin = utilsStrtoul(token[3], NULL, 0);
-      int mode = SERVO_MODE_POSITIONAL;
+      uint8_t gpioid = utilsStrtoul(token[2], NULL, 0);
       uint8_t ch;
+      int mode = SERVO_MODE_POSITIONAL;
 
-      uint8_t gpioid = GPIO_PORT_PIN_TO_ID(port, pin);
-      if (IS_5_TOKENS())
+      if (IS_4_TOKENS())
       {
-         if (utilsStrtoul(token[4], NULL, 0) == 1)
+         if (utilsStrtoul(token[3], NULL, 0) == 1)
          {
             mode = SERVO_MODE_CONTINUOUS_ROTATION;
          }

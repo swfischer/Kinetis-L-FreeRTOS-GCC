@@ -54,9 +54,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "clk.h"
 #include "frdmCfg.h"
 #include "gpio.h"
 #include "irq.h"
+#include "os.h"
 #include "servo.h"
 
 #define PIT_1_USEC     (BUS_CLOCK / 1000000)
@@ -123,6 +125,8 @@ int servoInit(uint8_t channels)
       sEnabledChCnt = 0;
       sInterChDelay = ((PWM_CYCLE_TIME / sChannels) - PWM_CHANNEL_TIME) * PIT_1_USEC;
 
+      clkEnable(CLK_PIT);
+
       i = sizeof(sServo);
       while (i--)
       {
@@ -147,6 +151,8 @@ void servoTerm(void)
          {
             servoClose(i);
          }
+
+         clkDisable(CLK_PIT);
       }
    }
 }
@@ -232,6 +238,8 @@ int servoEnable(uint8_t id)
    else
    {
       sServo[id].flags |= SERVO_FLAG_ENABLED;
+      gpioOutputLow(sServo[id].gpioId);
+      gpioSetAsOutput(sServo[id].gpioId);
 
       sEnabledChCnt ++;
       if (sEnabledChCnt == 1)
@@ -260,6 +268,7 @@ void servoDisable(uint8_t id)
    else
    {
       sServo[id].flags &= ~(SERVO_FLAG_ENABLED);
+      gpioSetAsInput(sServo[id].gpioId);
 
       sEnabledChCnt --;
       if (sEnabledChCnt == 0)
@@ -426,7 +435,7 @@ static uint32_t getNextDelay(void)
          }
 
          // Skip to the next channel
-         delay  = (PWM_CHANNEL_TIME * PIT_1_USEC) + sInterChDelay;
+         delay += (PWM_CHANNEL_TIME * PIT_1_USEC) + sInterChDelay;
       }
       
       sNextStep = ch << 1;
