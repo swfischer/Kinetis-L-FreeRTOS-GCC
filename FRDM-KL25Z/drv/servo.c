@@ -88,8 +88,11 @@ static int sInitialized = 0;
 static servoCh_t sServo[SERVO_MAX_CHANNELS];
 static uint8_t   sChannels;
 static uint8_t   sEnabledChCnt;
-static uint8_t   sNextStep;  // (Channel# * 2) w/bit 0 denoting falling edge ISR
 static uint32_t  sInterChDelay; // Delay between channels
+static uint8_t   sNextStep;   // The GPIO transition of the next ISR
+                              // - (Channel# * 2) w/bit 0 denoting falling edge ISR
+static uint8_t   sNextDelay;  // The delay to return in the next ISR
+                              // - (Channel# * 2) w/bit 0 denoting falling edge ISR
 
 static int  findEmptyChannel(void);
 static uint32_t getNextDelay(void);
@@ -247,6 +250,7 @@ int servoEnable(uint8_t id)
          uint32_t delay;
 
          sNextStep = id << 1;
+         sNextDelay = sNextStep;
          delay = getNextDelay();
          pitStart(PIT_WARMUP_DELAY, delay);
       }
@@ -383,16 +387,16 @@ static int findEmptyChannel(void)
 
 static uint32_t getNextDelay(void)
 {
-   // When entering this function, the sNextStep variable denotes the current
+   // When entering this function, the sNextDelay variable denotes the current
    // ISR state.  If the current state is for the rising edge, return the
    // channel pulse time.  If the current state is for the falling edge, return
    // the time to the next enabled channels rising edge.
    //
-   // The sNextStep variable will be updated before exiting this function.
+   // The sNextDelay variable will be updated before exiting this function.
 
    uint32_t delay = PWM_CYCLE_TIME * PIT_1_USEC;
-   uint8_t ch = sNextStep >> 1;
-   uint8_t falling = sNextStep & 0x1;
+   uint8_t ch = sNextDelay >> 1;
+   uint8_t falling = sNextDelay & 0x1;
 
    if (  !(sServo[ch].flags & SERVO_FLAG_OPEN)
       || !(sServo[ch].flags & SERVO_FLAG_ENABLED)
@@ -403,13 +407,13 @@ static uint32_t getNextDelay(void)
 
       ch ++;
       ch = (ch >= sChannels) ? 0 : ch;
-      sNextStep = ch << 1;
+      sNextDelay = ch << 1;
    }
    else if (!falling) // Rising edge
    {
       // Return the pulse time for this channel
       delay = sServo[ch].cnt;
-      sNextStep |= 0x1; // Mark for falling edge next
+      sNextDelay |= 0x1; // Mark for falling edge next
    }
    else // Falling edge
    {
@@ -438,7 +442,7 @@ static uint32_t getNextDelay(void)
          delay += (PWM_CHANNEL_TIME * PIT_1_USEC) + sInterChDelay;
       }
       
-      sNextStep = ch << 1;
+      sNextDelay = ch << 1;
    }
 
    return delay;
@@ -459,6 +463,7 @@ static void pitIrq(uint32_t cookie)
          )
       {
          // Transition the PWM GPIO
+         
          if (!falling)
          {
             gpioOutputHigh(sServo[ch].gpioId);
@@ -468,6 +473,14 @@ static void pitIrq(uint32_t cookie)
             gpioOutputLow(sServo[ch].gpioId);
          }
       }
+
+      // sNextDelay always leads sNextStep by one transition since the PIT
+      // timer has to be loaded not with the current step delay but one beyond.
+      // This is due to the fact that the PIT timer loads the next delay from
+      // the LDVAL register and then signals the interrupt, thus the LDVAL
+      // register has to be loaded with the next delay prior to the expiration
+      // of the timer.
+      sNextStep = sNextDelay;
 
       // Load the next timeout
       PIT_LDVAL(SERVO_PIT) = getNextDelay();

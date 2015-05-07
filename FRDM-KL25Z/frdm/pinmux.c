@@ -149,6 +149,7 @@ const muxConfig_t muxConfig[] =
 , { PORT_E, PORT_PIN_25, PIN_DEFAULTS_WITH_ALT(5) } // Accelerometer (I2C DATA)
 
 , { PORT_C, PORT_PIN_7,  PIN_DEFAULTS_WITH_ALT(1) } // GPIO
+, { PORT_E, PORT_PIN_30, PIN_DEFAULTS_WITH_ALT(1) } // GPIO
 
 // Already set in startup code
 //, { PORT_A, PORT_PIN_18, PIN_DEFAULTS_WITH_ALT(0) } // EXTAL

@@ -32,6 +32,12 @@ The commands available at the prompt allow for the following behaviors:
 * Display a memory location ("mem 0x40049000" or "mem 0x40049000 5").
 * Display version and other system information ("version").
 * Reboot the KL25Z ("reboot").
+* Interact with GPIOs (see "help gpio" and notes 1 & 2)
+* Interact with Servo PWM outputs (see "help servo" and notes 1 & 2).  This driver is based on a PIT timer and is expected to control up to 16 separate servo motors (*** functional but not well tested yet).
+
+NOTE 1: For GPIO and servo motor control, the desired output pin must be properly muxed as a GPIO via the "frdm/pinmux.c" file first.  The typical pin ALT setting for GPIO functionality is "1", but you should check the reference manual (Chapter 10: Signal Multiplexing and Signal Descriptions) to be sure.
+
+NOTE 2: GPIO pins are identified by a GPIO ID for the "gpio" and "servo" commands.  The GPIO ID for a given port and pin combination can be determined via the "gpio id" command.  Use the "help gpio" command to learn how the "gpio id" command works.
 
 # Compiling
 
@@ -83,6 +89,8 @@ In ./drv/*:
 * a driver for the on-board multi-color LED (led.c/h)
 * a driver for the on-board touch pad (touch.c/h)
 * a driver for the console UART via the OpenSDA port (uart.c/h) - this includes a TX path which used DMA to reduce interrupt overhead
+* a driver for interacting with GPIOs (gpio.c/h)
+* a driver for interacting with Servo PWM signals (servo.c/h) - this includes the ability to independently control up to 16 servo motors (*** functional but not well tested yet)
 
 In ./util/*:
 
