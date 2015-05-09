@@ -272,3 +272,4 @@ int clkIsEnabled(clkGate_t clk)
 
    return enabled;
 }
+

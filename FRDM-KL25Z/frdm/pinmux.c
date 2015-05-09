@@ -214,3 +214,4 @@ static void portClkEnable(int port)
 
    clkEnable(port_clks[port]);
 }
+

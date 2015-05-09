@@ -179,3 +179,4 @@ static uint16_t adcPerformRead(ADC_MemMapPtr base, int channel)
 
    return data;
 }
+

@@ -26,6 +26,23 @@
 // of the authors and should not be interpreted as representing official policies, 
 // either expressed or implied, of the FreeBSD Project.
 // ----------------------------------------------------------------------------
+// Functional Description:
+//
+// This code was created to provide peripheral clock resource management.
+// All processor clock gates are managed such that they will be turned on upon
+// the first enable request (via the clkEnable() function) and will stay
+// enabled until all outstanding requests have been released (via the
+// clkDisable() function).
+//
+// The mechanism used for this is a counting mechanism such that each
+// clkEnable() request increases a clock specific count and each clkDisable()
+// request decreases a clock specific count.  The clock is disabled when the
+// count is zero.
+//
+// Additional functions exist to allow for determining is a specific clock is
+// currently enabled or disabled (via the clkIsEnabled() function) and to allow
+// reading of the current use count (via the clkGetUseCount() function).
+// ----------------------------------------------------------------------------
 
 #ifndef _CLK_H_
 #define _CLK_H_
@@ -63,11 +80,19 @@ typedef enum ClkGate
 } clkGate_t;
 
 // External functions.
+
+// Used for the one-time power-up initialization of the clock framework
 extern void clkInit(void);
+// Used to enable a given clock gate
 extern void clkEnable(clkGate_t clk);
+// Used to disable a given clock gate
 extern void clkDisable(clkGate_t clk);
+// Used to retrieve a text name of a given clock gate
 extern const char* clkGetName(clkGate_t clk);
+// Used to retrieve the use count of a given clock gate
 extern int  clkGetUseCount(clkGate_t clk);
+// Used to retrieve the current state of a given clock gate
 extern int  clkIsEnabled(clkGate_t clk);
 
 #endif // _CLK_H_
+

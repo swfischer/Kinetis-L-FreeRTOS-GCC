@@ -26,6 +26,16 @@
 // of the authors and should not be interpreted as representing official policies, 
 // either expressed or implied, of the FreeBSD Project.
 // ----------------------------------------------------------------------------
+// Functional Description:
+//
+// This code was created to provide a means of reading and writing to I2C bus
+// devices while still sharing the bus with other potential devices.  In order
+// to perform a read or write of an I2C device, the bus must first be acquired
+// which allows for exclusive use of the bus, hence user A can't clobber user
+// B's I2C operations.  Once a user's current I2C read and write needs are
+// completed, the bus should be released to allow other users the chance of
+// using the bus.
+// ----------------------------------------------------------------------------
 
 #ifndef _I2C_H_
 #define _I2C_H_
@@ -43,16 +53,22 @@ typedef struct
 
 } i2cDevice_t;
 
-// Returns 0 on success, otherwise -1
+// One-time initialization on a users "i2cDevice_t" object.
+// Returns 0 on success, otherwise -1.
 extern int  i2cDeviceInit(i2cDevice_t *dev, I2C_MemMapPtr base, uint8_t devAddr, uint32_t rateHz);
 
-// Returns 0 on success, otherwise -1
+// Used for acquiring exclusive use of a given I2C bus.
+// Returns 0 on success, otherwise -1.
 extern int  i2cAcquireBus(i2cDevice_t *dev, uint32_t waitMs);
+// Used for releasing a previously acquired exclusive use of an I2C bus.
 extern void i2cReleaseBus(i2cDevice_t *dev);
 
-// Returns the requested data (unsigned 8 bit value) or -1 on error
+// Used for performing an 8-bit I2C read operation from a given I2C device.
+// Returns the requested data (unsigned 8 bit value) or -1 on error.
 extern int i2CReadAddr8(i2cDevice_t *dev, uint8_t addr);
-// Returns 0 on success, otherwise -1
+// Used for performing an 8-bit I2C write operation to a given I2C device.
+// Returns 0 on success, otherwise -1.
 extern int i2CWriteAddr8(i2cDevice_t *dev, uint8_t addr, uint8_t data);
 
 #endif // _I2C_H_
+

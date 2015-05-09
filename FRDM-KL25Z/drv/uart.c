@@ -531,3 +531,4 @@ static void uartSetBaud(uint32_t baud)
       UART_BDL_REG(UART_BASE) = UART_BDL_SBR(sbr);
    }
 }
+

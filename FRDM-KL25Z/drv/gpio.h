@@ -26,6 +26,21 @@
 // of the authors and should not be interpreted as representing official policies, 
 // either expressed or implied, of the FreeBSD Project.
 // ----------------------------------------------------------------------------
+// Functional Description:
+//
+// This code was created to provide as a wrapper around the GPIO HW interfaces.
+//
+// A secondary purpose is to serialize the GPIO in such a way as to allow the
+// designation of a GPIO with a single value (a GPIO ID) versus a port/pin pair
+// of values. The reason for this is that it makes abstracting GPIOs simplier
+// since only one value is needed to designate the specific GPIO.  For
+// instance, it becomes easier to have a define that denotes which GPIO is used
+// for a switch signal input when different GPIOs are used for a Freedom-KL25Z
+// board versus the same code on a Freedom-KL26Z board.  Yes, it could be done
+// as a pair of defines, one for the port and one for the pin, but it is
+// simplier in my opinion to manage as a single value with truly very little
+// overhead involved.
+// ----------------------------------------------------------------------------
 
 #ifndef _GPIO_H_
 #define _GPIO_H_
@@ -37,6 +52,7 @@
 
 #define GPIO_PIN_MAX   (31)
 
+// Macros to convert mappings from port/pin to GPIO ID or the reverse
 #define GPIO_PORT_PIN_TO_ID(port, pin) ((port << 5) | (pin & 0x1f))
 #define GPIO_ID_TO_PORT(id) (id >> 5)
 #define GPIO_ID_TO_PIN(id)  (id & 0x1f)
@@ -50,16 +66,28 @@ enum
 , GPIO_PORT_MAX = GPIO_PORT_E
 };
 
+// Used for clearing the interrupt bit for the given GPIO
 extern void gpioClearInterrupt(uint8_t gpioID);
+// Used for determining the register set base address for the given GPIO
 extern GPIO_MemMapPtr gpioIdToBase(uint8_t gpioID);
+// Used for retrieving the current state of the given GPIO
 extern int  gpioInputGet(uint8_t gpioID);
+// Used for determining if the given GPIO is currently in the high state
 extern int  gpioInputIsHigh(uint8_t gpioID);
+// Used for determining if the given GPIO is currently in the low state
 extern int  gpioInputIsLow(uint8_t gpioID);
+// Used for setting the given GPIO to output a high state (assuming its configured for output)
 extern void gpioOutputHigh(uint8_t gpioID);
+// Used for setting the given GPIO to output a low state (assuming its configured for output)
 extern void gpioOutputLow(uint8_t gpioID);
+// Used for setting the given GPIO output state (assuming its configured for output)
 extern void gpioOutputSet(uint8_t gpioID, bool value);
+// Used for toggling the given GPIO output state (assuming its configured for output)
 extern void gpioOutputToggle(uint8_t gpioID);
+// Used for setting the given GPIO as an input
 extern void gpioSetAsInput(uint8_t gpioID);
+// Used for setting the given GPIO as an output
 extern void gpioSetAsOutput(uint8_t gpioID);
 
 #endif // _GPIO_H_
+

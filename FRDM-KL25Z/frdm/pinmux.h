@@ -26,10 +26,25 @@
 // of the authors and should not be interpreted as representing official policies, 
 // either expressed or implied, of the FreeBSD Project.
 // ----------------------------------------------------------------------------
+// Functional Description:
+//
+// This code was created to provide a single location where all pin mux'ing is
+// performed.  The idea here is that pin mux'ing is board specific not CPU
+// specific, thus in order to write more generic drivers the board specific
+// pieces should not live with the drivers themselfs, hence this code.  Also,
+// by placing all pin mux'ing is a single place it becomes much easier to see
+// the full picture, thus avoiding issues with conflicting uses of pins or at
+// being aware of them at the earilest point in time.
+//
+// All pin mux'ing is configured based on entries in the "muxConfig[]" table.
+// The mux'ing options are all available for use in this table, including the
+// interrupt settings.  One entry equals one pin.
+// ----------------------------------------------------------------------------
 
 #ifndef _PINMUX_H_
 #define _MUX_H_
 
+// One-time initialization of the chip pin muxes.
 extern void pinmuxInit(void);
 
 #endif // _PINMUX_H_

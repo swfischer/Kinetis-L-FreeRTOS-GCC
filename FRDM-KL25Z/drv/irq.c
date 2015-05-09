@@ -321,3 +321,4 @@ static void virtualPortDHandler(uint32_t cookie)
 {
    virtualPortHandler(PORTD_BASE_PTR, IRQ(INT_VIRTUAL_PORT_D_FIRST));
 }
+

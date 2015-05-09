@@ -26,6 +26,16 @@
 // of the authors and should not be interpreted as representing official policies, 
 // either expressed or implied, of the FreeBSD Project.
 // ----------------------------------------------------------------------------
+// Functional Description:
+//
+// This code was created to provide a means of reading and writing to ADC
+// devices while still sharing the device with other potential users.  In order
+// to perform a read or write of an ADC device, the device must first be
+// acquired which allows for exclusive use of the device, hence user A can't
+// clobber user B's operations.  Once a user's current ADC needs are completed,
+// the bus should be released to allow other users the chance of using the
+// device.
+// ----------------------------------------------------------------------------
 
 #ifndef _ADC_H_
 #define _ADC_H_
@@ -41,13 +51,18 @@ typedef struct
 
 } adcDevice_t;
 
+// One-time initialization on a users "adcDevice_t" object.
 // Returns 0 on success, otherwise -1
 extern int  adcDeviceInit(adcDevice_t *dev, ADC_MemMapPtr base);
 
+// Used for acquiring exclusive use of a given ADC device.
 // Returns 0 on success, otherwise -1
 extern int  adcAcquire(adcDevice_t *dev, uint32_t waitMs);
+// Used for releasing a previously acquired exclusive use of a given ADC device.
 extern void adcRelease(adcDevice_t *dev);
 
+// Used for performing read of a given channel on a given acquired ADC device.
 extern uint16_t adcRead(adcDevice_t *dev, int channel);
 
 #endif // _ADC_H_
+

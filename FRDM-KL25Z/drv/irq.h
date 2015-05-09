@@ -26,6 +26,25 @@
 // of the authors and should not be interpreted as representing official policies, 
 // either expressed or implied, of the FreeBSD Project.
 // ----------------------------------------------------------------------------
+// Functional Description:
+//
+// This code was created to provide an interrupt framework to reduce hardcoding
+// of interrupt handlers either by direct mapping or handler naming.
+//
+// This interrupt framework, along with the interrupt vector setup in
+// "startup.c", funnels all peripheral related interrupts into a single generic
+// handler which than dispatches the interrupt handling to an appropriate
+// registered client handling function.  This allows for code using interrupts
+// to be written more generically and thus allowing more flexiblity to switch
+// HW blocks (for instance I2C0 to I2C1) with little to no code impact.
+//
+// Additionally, this framework virtualizes the GPIO interrupts meaning that
+// even though all interrupts for a GPIO port occur on the same physical
+// interrupt, each pin of the port has its own virtual interrupt which can be
+// registered for and serviced as if it were an individual interrupt.  This
+// same virtualization could be done for other peripherals with shared
+// interrupts, but as yet that has not been needed.
+// ----------------------------------------------------------------------------
 
 #ifndef _IRQ_H_
 #define _IRQ_H_
@@ -34,6 +53,9 @@
 
 #include "kinetis.h"
 
+// typedef'ing the Freescale interrupt type to clarify that an "int" numbering
+// includes all interrupts and an "irq" numbering skips over the system
+// interrupts thus only including the peripheral interrupts.
 typedef IRQInterruptIndex intIdx_t;
 
 #define INT_PHYSICAL_FIRST    (INT_SysTick + 1)
@@ -48,7 +70,6 @@ enum
 , INT_VIRTUAL_LAST // Must be last
 };
 
-// This should be somewhere else
 enum
 { PORT_A = 0
 , PORT_B
@@ -63,16 +84,23 @@ enum
 
 #define IRQ(x)            (x - INT_PHYSICAL_FIRST)
 
+// The IRQ callback function pattern
 typedef void (*irqCallback)(uint32_t cookie);
 
+// One-time initialization of this interrupt framework
 extern void irqInit(void);
+// The single framework interrupt handler function
 extern void irqHandler(void);
-
+// Used for registering a callback to a given interrupt
 extern int  irqRegister(intIdx_t intIdx, irqCallback callback, uint32_t cookie);
+// Used for deleting the previous registeration of a given interrupt
 extern void irqUnregister(intIdx_t intIdx);
+// Used for enabling a given interrupt (allowing the interrupt to occur)
 extern void irqEnable(intIdx_t intIdx);
+// Used for disabling a given interrupt (blocking the interrupt from occurring)
 extern void irqDisable(intIdx_t intIdx);
 
+// A few inlines functions which help map to interruptible ports as consecutive
 static inline int portToVirtualPortIdx(int port)
 {
    return (port == PORT_D) ? 1 : 0;
@@ -84,3 +112,4 @@ static inline int virtualPortIdxToPort(int idx)
 }
 
 #endif // _IRQ_H_
+

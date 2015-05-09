@@ -26,6 +26,21 @@
 // of the authors and should not be interpreted as representing official policies, 
 // either expressed or implied, of the FreeBSD Project.
 // ----------------------------------------------------------------------------
+// Functional Description:
+//
+// This code was created to provide a not so generic driver for a console type
+// use of a serial connection.
+//
+// Several console specific assumptions were made while writing this driver,
+// mostly just to reduce complexity and overhead:
+//
+// a) It is assumed that a carriage return character ends a line of input.
+// b) It is assumed that echoing of character input is desired.
+// c) It is assumed that backspace and delete character handling is desired.
+//
+// Beyond this the driver is generic, but the above are fairly specific so the
+// driver is assumed to be console specific.
+// ----------------------------------------------------------------------------
 
 #ifndef _UART_H_
 #define _UART_H_
@@ -51,3 +66,4 @@ extern void uartReadFlush(void);
 extern int  uartWrite(uint8_t *buf, uint16_t len);
 
 #endif // _UART_H_
+

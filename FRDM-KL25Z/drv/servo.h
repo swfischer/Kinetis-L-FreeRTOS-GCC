@@ -26,6 +26,23 @@
 // of the authors and should not be interpreted as representing official policies, 
 // either expressed or implied, of the FreeBSD Project.
 // ----------------------------------------------------------------------------
+// Functional Description:
+//
+// This code was created to provide a framework for producing the PWM signals
+// used to control hobby servo motors for up to 16 separate motors.
+//
+// The approach here is to use a single PIT channel and interrupt.  The PIT is
+// used to produce interrupts at the apropriate times for PWM edge transitions.
+// The cycle time for a single PWM signal is set at 40ms.  This period is
+// broken into 16 slots or channels and during each channel a single PWM pulse
+// is produced.  The minimum PWM pulse time within a channel is 1ms and the
+// maximum pulse time is 2ms.  This varying 1ms period, the time between the
+// min and max pulse time, has a 1us resolution.
+//
+// All toll, if all 16 channels were active, the CPU would need to handle 32
+// ISRs per 40ms, or 800 ISRs per second.  This is a lot of ISRs, but at 48MHz
+// this micro-processor should be able to handle the load.
+// ----------------------------------------------------------------------------
 
 #ifndef SERVO_H
 #define SERVO_H
