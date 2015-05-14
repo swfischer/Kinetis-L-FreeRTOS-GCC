@@ -40,3 +40,4 @@ extern void usbCdcInit(usbCtrlIsrHandler ctrlHandler, usbDataIsrHandler dataHand
 extern void usbCdcEngine(void);
 
 #endif // _USBCDC_H_
+

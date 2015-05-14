@@ -216,3 +216,4 @@ osStatus osTimerStop(osTimerId timer_id)
 
    return rc;
 }
+

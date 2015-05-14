@@ -36,6 +36,15 @@
 // the bus should be released to allow other users the chance of using the
 // device.
 // ----------------------------------------------------------------------------
+// Functional Description:
+//
+// This code was created to provide a means of reading and writing to ADC
+// devices while still sharing the hardware with other users.  In order to
+// perform a read of an ADC channel, the ADC devices must first be acquired
+// which allows for exclusive use, hence user A can't clobber user B's use
+// attempts.  Once a user's current ADC read needs are completed, the ADC
+// device should be released to allow other users the chance of using it.
+// ----------------------------------------------------------------------------
 
 #ifndef _ADC_H_
 #define _ADC_H_

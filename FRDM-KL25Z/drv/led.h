@@ -26,6 +26,16 @@
 // of the authors and should not be interpreted as representing official policies, 
 // either expressed or implied, of the FreeBSD Project.
 // ----------------------------------------------------------------------------
+// Functional Description:
+//
+// This code was created to provide a simple interface to the Freedom boards
+// multi-color LED hardware.  The code is based on Andrew Payne's work (see
+// led.c for his copyright notice).
+//
+// The LED color brightness values input as a percentage of full brightness
+// with valid input values from 0 to 100, where 0 implies the LED color is off
+// and 100 implies the LED color is at full brightness.
+// ----------------------------------------------------------------------------
 
 #ifndef _LED_H_
 #define _LED_H_
@@ -35,8 +45,10 @@
 
 #include "kinetis.h"
 
+// One-time initialization of the LED hardware.
 extern void ledInit(void);
 
+// Used for setting the LED brightness of all colors at once.
 static inline void ledSet(int red, int green, int blue)
 {
    TPM2_C0V = red;
@@ -44,19 +56,23 @@ static inline void ledSet(int red, int green, int blue)
    TPM0_C1V = blue;
 }
 
+// Used for setting the LED brightness of the blue color only.
 static inline void ledBlue(int percent)
 {
    TPM0_C1V = percent;
 }
 
+// Used for setting the LED brightness of the green color only.
 static inline void ledGreen(int percent)
 {
    TPM2_C1V = percent;
 }
 
+// Used for setting the LED brightness of the red color only.
 static inline void ledRed(int percent)
 {
    TPM2_C0V = percent;
 }
 
 #endif // _LED_H_
+

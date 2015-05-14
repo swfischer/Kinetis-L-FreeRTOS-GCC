@@ -75,12 +75,12 @@ uint32_t utilsStrlen(const char *str)
 
 int32_t utilsStrtol(const char *str, char **endptr, int base)
 {
-    return _strto_l(str, endptr, base, 0);
+   return _strto_l(str, endptr, base, 0);
 }
 
 uint32_t utilsStrtoul(const char *str, char **endptr, int base)
 {
-    return _strto_l(str, endptr, base, 1);
+   return _strto_l(str, endptr, base, 1);
 }
 
 // ----------------------------------------------------------------------------
@@ -182,3 +182,4 @@ DONE:
       return number;
    }
 }
+

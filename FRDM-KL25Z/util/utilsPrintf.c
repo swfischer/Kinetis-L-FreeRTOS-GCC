@@ -711,3 +711,4 @@ int utilsSnprintf(char *str, size_t count, const char *fmt, ...)
 
    return bytes;
 }
+

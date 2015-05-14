@@ -298,3 +298,4 @@ typedef struct __attribute__((packed))
 } usbCdcLineCoding_t;
 
 #endif // _USB_H_
+

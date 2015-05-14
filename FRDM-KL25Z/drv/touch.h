@@ -26,11 +26,28 @@
 // of the authors and should not be interpreted as representing official policies, 
 // either expressed or implied, of the FreeBSD Project.
 // ----------------------------------------------------------------------------
+// Functional Description:
+//
+// This code was created to provide a simple interface to the Freedom boards
+// touch pad hardware.  The code is based on Andrew Payne's work (see touch.c
+// for his copyright notice).
+//
+// It is important to note that this driver, once initialized, produces a
+// constant stream of timer callbacks and ISRs.  The method used to acquire
+// the touch data is via constant scanning of the two channels involved.  This
+// scanning occurs at a rate defined by TOUCH_SCAN_TIME.  This time is the
+// delay between scan attempts.  Note that since two channels are scanned for
+// the touch pad, each channel is scanned at a rate twice the TOUCH_SCAN_TIME.
+// In other words, each channel is scan every other timer expiration.
+// ----------------------------------------------------------------------------
 
 #ifndef _TOUCH_H_
 #define _TOUCH_H_
 
+// One-time initialization of the touch framework.
 extern void touchInit(uint32_t channelMask);
+// Used for retrieving the most recent touch data.
 extern int  touchData(int channel);
 
 #endif // _TOUCH_H_
+

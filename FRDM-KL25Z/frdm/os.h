@@ -26,6 +26,15 @@
 // of the authors and should not be interpreted as representing official policies, 
 // either expressed or implied, of the FreeBSD Project.
 // ----------------------------------------------------------------------------
+// Functional Description:
+//
+// This code was created to provide a mild attempt at following the CMSIS OS
+// API layer specification.  FreeRTOS is not meant to follow the CMSIS OS API
+// Layer but with some assumptions and adjustments it's not too far off.
+// Although the entire spec is not attempted here, the one area that appears
+// the farthest off is signals (CMSIS naming) versus event flags (FreeRTOS
+// naming).
+// ----------------------------------------------------------------------------
 
 #ifndef _OS_H_
 #define _OS_H_
@@ -186,7 +195,7 @@ extern osStatus osMutexWait(osMutexId mutex, uint32_t millisec);
 extern osStatus osMutexRelease(osMutexId mutex);
 
 // ----------------------------------------------------------------------------
-// SIGNAL - not correctly implemented, but didn't want the overhead of tack specific data
+// SIGNAL - not correctly implemented, but didn't want the overhead of task specific data
 
 typedef EventGroupHandle_t osSignalId;
 
@@ -279,3 +288,4 @@ static inline osStatus osTimerDelete(osTimerId timer_id)
 // ----------------------------------------------------------------------------
 
 #endif // _OS_H_
+

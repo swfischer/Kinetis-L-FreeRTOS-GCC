@@ -26,6 +26,15 @@
 // of the authors and should not be interpreted as representing official policies, 
 // either expressed or implied, of the FreeBSD Project.
 // ----------------------------------------------------------------------------
+// Functional Description:
+//
+// This code contains the main() function and handles:
+//
+//   - Interrupt routing for FreeRTOS and the interrupt framework
+//   - One-time initialization of multiple peripheral components
+//   - FreeRTOS initialization and starting
+//   - Task creation
+// ----------------------------------------------------------------------------
 
 #include "accel.h"
 #include "clk.h"
@@ -158,3 +167,4 @@ static void uartCallback(int event)
 {
 }
 #endif
+

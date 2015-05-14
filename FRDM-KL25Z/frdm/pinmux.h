@@ -48,3 +48,4 @@
 extern void pinmuxInit(void);
 
 #endif // _PINMUX_H_
+

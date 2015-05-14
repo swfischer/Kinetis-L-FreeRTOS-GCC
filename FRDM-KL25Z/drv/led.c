@@ -60,3 +60,4 @@ void ledInit(void)
    TPM2_SC = TPM_SC_CMOD(1) | TPM_SC_PS(0); // Edge Aligned PWM running from BUSCLK/1
    TPM0_SC = TPM_SC_CMOD(1) | TPM_SC_PS(0); // Edge Aligned PWM running from BUSCLK/1
 }
+

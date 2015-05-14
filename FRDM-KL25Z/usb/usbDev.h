@@ -79,3 +79,4 @@ extern void usbDevEpReset(uint8_t ep);
 extern void usbDevEpTxTransfer(uint8_t ep, uint8_t *data, uint8_t len);
 
 #endif // _USBCORE_H_
+

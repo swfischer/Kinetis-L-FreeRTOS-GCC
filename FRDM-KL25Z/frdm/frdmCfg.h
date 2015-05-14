@@ -26,6 +26,14 @@
 // of the authors and should not be interpreted as representing official policies, 
 // either expressed or implied, of the FreeBSD Project.
 // ----------------------------------------------------------------------------
+// Functional Description:
+//
+// This file contains a number of configuration values and option values which
+// are Freedom KL25Z4 board specific.  The idea here is to place much of the
+// board specific pieces here, thus make the drivers more generic.  There is no
+// elusion that this is all encompassing and the drivers are ideally generic,
+// but where it made sense the board specific piece's landed here.
+// ----------------------------------------------------------------------------
 
 #ifndef _FRDMCFG_H_
 #define _FRDMCFG_H_
@@ -81,3 +89,4 @@
 #endif
 
 #endif // _FRDMCFG_H_
+

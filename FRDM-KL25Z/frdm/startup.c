@@ -30,6 +30,17 @@
 //
 //  Copyright (c) 2012-2013 Andrew Payne <andy@payne.org>
 // ----------------------------------------------------------------------------
+// Functional Description:
+//
+// This code handles:
+//
+//   - boot up
+//   - memory initialization
+//   - clock initialization
+//   - interrupt vectors
+//   - faults
+//   - calling the main() function
+// ----------------------------------------------------------------------------
 
 #include "frdmCfg.h"
 #include "led.h"
@@ -190,7 +201,7 @@ void _resetHandler(void)
 
    main();
 
-   fault(0xAAAAAAAA); // ...should never get here.
+   fault(0xAAAAAAAA); // Should never get here
 }
 
 // ----------------------------------------------------------------------------
@@ -431,3 +442,4 @@ static void pllInit(uint8_t prdiv, uint8_t vdiv)
    // Now in PEE
    // ----------
 }
+

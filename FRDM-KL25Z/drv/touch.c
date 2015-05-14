@@ -154,3 +154,4 @@ static void tsiIrqHandler(uint32_t cookie)
    uint32_t channel = (TSI0_DATA & TSI_DATA_TSICH_MASK) >> TSI_DATA_TSICH_SHIFT;
    sRawCounts[channel] = scanData();
 }
+

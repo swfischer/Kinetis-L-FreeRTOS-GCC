@@ -26,6 +26,12 @@
 // of the authors and should not be interpreted as representing official policies, 
 // either expressed or implied, of the FreeBSD Project.
 // ----------------------------------------------------------------------------
+// Functional Description:
+//
+// This code was created to provide a set of basic utility functions.  Since
+// CLib is not being used, many of these basic functions were copied or created
+// to fill the needs.
+// ----------------------------------------------------------------------------
 
 #ifndef _UTILS_H_
 #define _UTILS_H_
@@ -51,3 +57,4 @@ extern int32_t  utilsStrtol(const char *str, char **endptr, int base);
 extern uint32_t utilsStrtoul(const char *str, char **endptr, int base);
 
 #endif // _UTILS_H_
+

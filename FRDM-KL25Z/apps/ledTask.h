@@ -26,23 +26,40 @@
 // of the authors and should not be interpreted as representing official policies, 
 // either expressed or implied, of the FreeBSD Project.
 // ----------------------------------------------------------------------------
+// Functional Description:
+//
+// This task was created to provide a set of LED behaviors based on a "mode"
+// settable through a console command.  The three basic modes are:
+//
+// GLOW  - in this mode the LED is slowly cycled in brightness from off to fully
+//         on and back to off.  Only one color is cycled at a time.
+// TOUCH - in this mode the LED brightness is set via the position of the most
+//         recent touch pad sample.  One one color is used.
+// ACCEL - in this mode the three colors of the LED are controlled by the three
+//         axis of the accelerometer.  The red color is controlled by the X
+//         axis.  The green color is controlled by the Y axis.  The blue color
+//         is controlled by the Z axis.
+// ----------------------------------------------------------------------------
 
 #ifndef _LEDTASK_H_
 #define _LEDTASK_H_
 
 enum
-{ LED_MODE_GLOW = 0
+{ LED_MODE_GLOW = 0 // All three colors, one after the other
 , LED_MODE_GLOW_RED
 , LED_MODE_GLOW_GREEN
 , LED_MODE_GLOW_BLUE
-, LED_MODE_TOUCH
+, LED_MODE_TOUCH // Same as TOUCH_BLUE
 , LED_MODE_TOUCH_RED
 , LED_MODE_TOUCH_GREEN
 , LED_MODE_TOUCH_BLUE
-, LED_MODE_ACCEL
+, LED_MODE_ACCEL //
 };   
 
+// The task main function. 
 extern void ledTaskEntry( void *pParameters );
+// Used for setting the LED operating mode.
 extern void ledSetMode(int mode);
 
 #endif // _LEDTASK_H_
+

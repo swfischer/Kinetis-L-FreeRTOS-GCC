@@ -397,3 +397,4 @@ static void taskDataIsrHandler(uint8_t ep, uint8_t *data, uint16_t len)
       }
    }
 }
+

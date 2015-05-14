@@ -26,14 +26,18 @@
 // of the authors and should not be interpreted as representing official policies, 
 // either expressed or implied, of the FreeBSD Project.
 // ----------------------------------------------------------------------------
+// Functional Description:
+//
+// This code was created to provide a circular buffer of bytes object which
+// handles only a small size buffer, less than or equal to 256 bytes.  A buffer
+// like this was needed in more than one place, so this code was created to
+// make the usages common.
+// ----------------------------------------------------------------------------
 
 #ifndef _UTILSBUF_H_
 #define _UTILSBUF_H_
 
 #include <stdint.h>
-
-// This utility is a circular buffer of bytes object which handles only a small
-// size buffer, less than or equal to 256 bytes.
 
 typedef struct
 {
@@ -64,3 +68,4 @@ extern void utilsBufPush(utilsBuf_t *obj, uint8_t byte);
 extern void utilsBufReset(utilsBuf_t *obj);
 
 #endif // _UTILSBUF_H_
+

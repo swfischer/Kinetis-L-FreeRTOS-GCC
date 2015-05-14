@@ -26,6 +26,17 @@
 // of the authors and should not be interpreted as representing official policies, 
 // either expressed or implied, of the FreeBSD Project.
 // ----------------------------------------------------------------------------
+// Functional Description:
+//
+// This code was created to provide the basic console character buffering
+// and waiting behaviors.  For the output path, Printf and Flush functions are
+// used to manage the sending of strings through the serial connection.  For
+// the input path, GetInput and GetInputCnt functions are used to view, wait
+// for and retrieve input strings.
+//
+// This code is capable of interacting with a serial port or a USB serial
+// connection.
+// ----------------------------------------------------------------------------
 
 #ifndef _CONSOLE_H_
 #define _CONSOLE_H_
@@ -34,19 +45,21 @@
 
 #define CONSOLE_STRING_SIZE_MAX   (128)
 
+// One-time initialization of the console driver.
 // Returns 0 on success
 extern int  consoleInit(uint32_t baud);
 
-// Flushes the printf path and only returns after the flush is complete
+// Flushes the printf path and only returns after the flush is complete.
 extern void consoleFlush(void);
 
-// Blocks until a CR is received and then returns the number of bytes retrieved
+// Blocks until a CR is received and then returns the number of bytes retrieved.
 extern int  consoleGetInput(char *buf, int len);
 
-// Returns the number of characters waiting to be retrieved
+// Returns the number of characters waiting to be retrieved.
 extern int  consoleGetInputCnt(void);
 
-// Supports the more commonly used formatting characters
+// Supports the more commonly used formatting characters.
 extern void consolePrintf(const char *format, ...);
 
 #endif // _CONSOLE_H_
+

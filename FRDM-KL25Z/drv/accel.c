@@ -144,3 +144,4 @@ static void mma8451WriteReg(uint8_t addr, uint8_t data)
    utilsHwDelay(1);
    i2CWriteAddr8(&mma8451device, addr, data);
 }
+

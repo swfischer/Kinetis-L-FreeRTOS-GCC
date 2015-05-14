@@ -151,3 +151,4 @@ static bool interfaceReqHandler(uint8_t ep, usbSetupPacket_t *pkt)
 
    return (expectDataPkt);
 }
+

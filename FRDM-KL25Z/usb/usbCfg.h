@@ -68,3 +68,4 @@ extern const uint8_t* usbCfgStringTable[];
 extern bool usbCfgIsEpIN(uint8_t ep);
 
 #endif // _USBCFG_H_
+

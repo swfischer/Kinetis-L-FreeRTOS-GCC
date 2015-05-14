@@ -46,3 +46,4 @@ extern int  usbConsoleWrite(uint8_t *buf, uint16_t len);
 #endif
 
 #endif // _USBTASK_H_
+

@@ -26,10 +26,20 @@
 // of the authors and should not be interpreted as representing official policies, 
 // either expressed or implied, of the FreeBSD Project.
 // ----------------------------------------------------------------------------
+// Functional Description:
+//
+// This code was created to provide a series of console commands.  Each command
+// is registered with the console task during initialization and the handler
+// functions will be called as the command is received by the console task.
+// Each command supports long and short help output and many contain multiple
+// command options with fairly complex command handling.
+// ----------------------------------------------------------------------------
 
 #ifndef _CONSOLECMDS_H_
 #define _CONSOLECMDS_H_
 
+// One-time initialization of the console commands.
 extern void consoleCmdsInit(void);
 
 #endif // _CONSOLECMDS_H_
+

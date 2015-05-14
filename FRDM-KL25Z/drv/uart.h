@@ -40,6 +40,11 @@
 //
 // Beyond this the driver is generic, but the above are fairly specific so the
 // driver is assumed to be console specific.
+//
+// The input path produces an interrupt for every character received, thus
+// allowing the per-character processing needed on the input.  The output path
+// is DMA based and only produces one interrupt per write, which is when the
+// transmission completes.
 // ----------------------------------------------------------------------------
 
 #ifndef _UART_H_
@@ -52,17 +57,28 @@
 
 #define UART_EVENT_READ_BIT   (1 << 0)
 #define UART_EVENT_WRITE_BIT  (1 << 1)
+
+// The UART callback function pattern.
 typedef void (*uartCb)(int event);
 
-// External functions
+// One-time initialization of the console UART driver.
 extern int  uartInit(uint32_t baud, uartCb callback);
 
+// Used for disabling the driver auto-echo feature while writes are occurring.
+// This is needed to prevent interference with the write operations since the
+// echo feature drops the echo'd characters right into the output FIFO, hence
+// can overwrite characters and more importantly cause early completions thus
+// truncating the write output.
 extern void uartEchoEnable(bool en);
 
+// Used for retrieving an input line into the given buffer.
 extern int  uartRead(uint8_t *buf, uint16_t len);
+// Used for determining how many input characters are waiting to be read.
 extern int  uartReadCnt(void);
+// Used for clearing the input character buffer.
 extern void uartReadFlush(void);
 
+// Used for outputting a line of text over the UART.
 extern int  uartWrite(uint8_t *buf, uint16_t len);
 
 #endif // _UART_H_

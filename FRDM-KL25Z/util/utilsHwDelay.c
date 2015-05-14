@@ -53,3 +53,4 @@ void utilsHwDelay(uint32_t ms)
     
     LPTMR0_CSR = 0;                     // Turn off timer
 }
+

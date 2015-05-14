@@ -26,15 +26,24 @@
 // of the authors and should not be interpreted as representing official policies, 
 // either expressed or implied, of the FreeBSD Project.
 // ----------------------------------------------------------------------------
+// Functional Description:
+//
+// This code was created to provide access to the Freedom board accelerometer.
+// The MMA8451Q accelerometer is initialized and perpared for retrieval of
+// samples.  The retrieval function reads all three axis in the same call.
+// ----------------------------------------------------------------------------
 
 #ifndef _ACCEL_H_
 #define _ACCEL_H_
 
 #include <stdint.h>
 
+// One-time initialization of the accelerometer hardware.
 // Returns 0 on success, otherwise -1
 extern int  accelInit(void);
+// Used for retrieving an accelerometer sample of each axis.
 // Returns 0 on success, otherwise -1
 extern int  accelGet(int16_t *x, int16_t *y, int16_t *z);
 
 #endif // _ACCEL_H_
+

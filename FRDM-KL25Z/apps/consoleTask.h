@@ -26,16 +26,26 @@
 // of the authors and should not be interpreted as representing official policies, 
 // either expressed or implied, of the FreeBSD Project.
 // ----------------------------------------------------------------------------
+// Functional Description:
+//
+// This task was created to provide the console context, input parsing behavior
+// and a console command framework.
+// ----------------------------------------------------------------------------
 
 #ifndef _CONSOLETASK_H_
 #define _CONSOLETASK_H_
 
 #include <stdbool.h>
 
+// A function pattern for console command handler functions.
 typedef bool (*cmdHandler_t)(int count, char **token);
 
+// The task main function.
 extern void consoleTaskEntry(void *parameters);
+// Used for registering a console command name and handler function.
 extern void consoleTaskRegisterCommand(char *cmd, cmdHandler_t test);
+// Used for displaying a console banner.
 extern void consoleTaskShowBanner(void);
 
 #endif // _CONSOLETASK_H_
+

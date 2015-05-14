@@ -164,3 +164,4 @@ bool usbCfgIsEpIN(uint8_t ep)
 
    return in;
 }
+
